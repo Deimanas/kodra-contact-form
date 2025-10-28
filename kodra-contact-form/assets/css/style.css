@@ -1,1 +1,12 @@
-/* placeholder */
+
+.kcf-form{backdrop-filter:blur(10px);background:rgba(255,255,255,0.55);border-radius:18px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.06);position:relative}
+.kcf-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px 36px}
+.kcf-field{position:relative}.kcf-field-full{grid-column:1/-1}
+.kcf-field label{display:block;font-size:14px;margin-bottom:8px;color:rgba(0,0,0,0.38)}
+.kcf-field input,.kcf-field textarea{width:100%;border:none;border-bottom:2px solid rgba(0,0,0,0.08);background:transparent;outline:none;padding:10px 4px 12px;font-size:16px;color:#111}
+.kcf-field input:focus,.kcf-field textarea:focus{border-bottom-color:rgba(0,0,0,0.25)}
+.kcf-actions{margin-top:18px}.kcf-button{background:#000;color:#fff;border:none;padding:12px 18px;border-radius:999px;font-weight:600;cursor:pointer}
+.kcf-msg{margin-top:14px;font-size:14px}
+.kcf-thread{list-style:none;padding-left:0;max-width:900px}.kcf-thread-item{padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;background:#fff}
+.kcf-thread-item.kcf-latest strong{font-weight:500}
+@media (max-width:768px){.kcf-grid{grid-template-columns:1fr;gap:18px}}
