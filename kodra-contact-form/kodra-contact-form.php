@@ -2,7 +2,7 @@
 <?php
 /**
  * Plugin Name: Kodra Contact Form
- * Version: 1.6.3.7
+ * Version: 1.6.3.8
  * Author: Kodra
  */
 if(!defined('ABSPATH')) exit;
