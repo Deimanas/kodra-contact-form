@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build plugin zip
-        run: zip -r kodra-contact-form.zip kodra-contact-form -x "*.git*" -x "*.github/*"
+        run: zip -r kodra-contact-form.zip -x "*.git*" -x "*.github/*"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
