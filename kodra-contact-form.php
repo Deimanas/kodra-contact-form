@@ -1,9 +1,10 @@
 
 <?php
 /**
- * Plugin Name: Kodra Contact Form
+  * Plugin Name: Kodra Contact Form
  * Version: 1.6.3.8
- * Author: Kodra
+ * GitHub Plugin URI: https://github.com/Deimanas/kodra-contact-form
+ * Primary Branch: main
  */
 if(!defined('ABSPATH')) exit;
 define('KCF_VERSION','1.6.3.7'); define('KCF_PATH', plugin_dir_path(__FILE__)); define('KCF_URL', plugin_dir_url(__FILE__));
