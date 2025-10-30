@@ -10,5 +10,22 @@ function kcf_trim_body_for_admin($body){
   return trim($b);
 }
 function kcf_clean_textarea($text){ return trim(sanitize_textarea_field((string)$text)); }
-function kcf_prepare_email_body($text,$tokens=[]){ $normalized=str_replace(["\r\n","\r"],"\n",(string)$text); $html=nl2br(esc_html($normalized)); if(!empty($tokens)&&is_array($tokens)){ foreach($tokens as $label=>$value){ if($value===null) continue; $value=is_array($value)?reset($value):$value; $value=trim((string)$value); if($value==='') continue; $label=trim((string)$label); if($label==='') continue; $html.="\n<!-- ".$label.': '.$value." -->"; } } return $html; }
+function kcf_prepare_email_body($text,$tokens=[]){
+  $normalized=str_replace(["\r\n","\r"],"\n",(string)$text);
+  $html=nl2br(esc_html($normalized));
+  if(!empty($tokens)&&is_array($tokens)){
+    foreach($tokens as $label=>$value){
+      if($value===null) continue;
+      $value=is_array($value)?reset($value):$value;
+      $value=trim((string)$value);
+      if($value==='') continue;
+      $label=trim((string)$label);
+      if($label==='') continue;
+      $pair=$label.': '.$value;
+      $hidden='<div style="display:none!important;max-height:0;max-width:0;overflow:hidden;opacity:0;color:transparent">'.esc_html($pair).'</div>';
+      $html.="\n<!-- ".$pair." -->\n".$hidden;
+    }
+  }
+  return $html;
+}
 ?>
