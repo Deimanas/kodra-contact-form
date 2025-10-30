@@ -6,7 +6,9 @@
 .kcf-field input,.kcf-field textarea{width:100%;border:none;border-bottom:2px solid rgba(0,0,0,0.08);background:transparent;outline:none;padding:10px 4px 12px;font-size:16px;color:#111}
 .kcf-field input:focus,.kcf-field textarea:focus{border-bottom-color:rgba(0,0,0,0.25)}
 .kcf-actions{margin-top:18px}.kcf-button{background:#000;color:#fff;border:none;padding:12px 18px;border-radius:999px;font-weight:600;cursor:pointer}
-.kcf-msg{margin-top:14px;font-size:14px}
+.kcf-msg{margin-top:14px;font-size:14px;min-height:18px}
+.kcf-msg--success{color:#0f5132;background:#d1e7dd;padding:10px 14px;border-radius:8px}
+.kcf-msg--error{color:#842029;background:#f8d7da;padding:10px 14px;border-radius:8px}
 .kcf-thread{list-style:none;padding-left:0;max-width:900px}.kcf-thread-item{padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;background:#fff}
 .kcf-thread-item.kcf-latest strong{font-weight:500}
 @media (max-width:768px){.kcf-grid{grid-template-columns:1fr;gap:18px}}
