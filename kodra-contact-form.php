@@ -2,12 +2,12 @@
 <?php
 /**
   * Plugin Name: Kodra Contact Form
- * Version: 1.6.3.12
+ * Version: 1.6.4
  * GitHub Plugin URI: https://github.com/Deimanas/kodra-contact-form
  * Primary Branch: main
  */
 if(!defined('ABSPATH')) exit;
-define('KCF_VERSION','1.6.3.11'); define('KCF_PATH', plugin_dir_path(__FILE__)); define('KCF_URL', plugin_dir_url(__FILE__));
+define('KCF_VERSION','1.6.4'); define('KCF_PATH', plugin_dir_path(__FILE__)); define('KCF_URL', plugin_dir_url(__FILE__));
 global $wpdb; define('KCF_TABLE', $wpdb->prefix.'kodra_messages'); define('KCF_REPLIES_TABLE', $wpdb->prefix.'kodra_message_replies'); define('KCF_OPT','kcf_settings');
 require_once ABSPATH.'wp-admin/includes/upgrade.php';
 function kcf_install_tables(){ global $wpdb; $cc=$wpdb->get_charset_collate();
