@@ -15,6 +15,17 @@ function kcf_extract_inbox_id($raw,$body){
   return 0;
 }
 
+function kcf_extract_message_id_from_headers($raw){
+  if(preg_match('/kcfroot-(\d+)@/i',$raw,$m)) return (int)$m[1];
+  if(preg_match('/kcfmsg-(\d+)-\d+@/i',$raw,$m)) return (int)$m[1];
+  return 0;
+}
+
+function kcf_extract_inbox_from_headers($raw){
+  if(preg_match('/kcfinbox-(\d+)@/i',$raw,$m)) return (int)$m[1];
+  return 0;
+}
+
 function kcf_imap_normalize_body($body){
   $text=wp_strip_all_tags($body);
   $text=preg_replace('/^\s*KCF-(?:ID|INBOX-ID):\s*\d+\s*$/mi','',$text);
@@ -120,6 +131,12 @@ add_action('kcf_check_mail_event',function(){
       if(!is_string($body)) $body='';
       $id=kcf_extract_kcf_id($subject,$raw,$body);
       $inbox_ref=kcf_extract_inbox_id($raw,$body);
+      if($id<=0){
+        $id=kcf_extract_message_id_from_headers($raw);
+      }
+      if($inbox_ref<=0){
+        $inbox_ref=kcf_extract_inbox_from_headers($raw);
+      }
       kcf_log('Email #'.strval($no).' subj="'.$subject.'" -> KCF-ID='.strval($id).($inbox_ref?('; INBOX='.$inbox_ref):''));
       $fromaddr='';
       if(isset($h->fromaddress)&&$h->fromaddress){
