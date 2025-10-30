@@ -2,13 +2,14 @@
 <?php if(!defined('ABSPATH')) exit;
 add_action('admin_menu',function(){ add_menu_page('Kodra žinutės','Kodra žinutės','manage_options','kcf-messages','kcf_admin_messages_page','dashicons-email-alt2',26); add_submenu_page('kcf-messages','Gauti laiškai','Gauti laiškai','manage_options','kcf-inbox','kcf_admin_inbox_page'); add_submenu_page('kcf-messages','Nustatymai','Nustatymai','manage_options','kcf-settings','kcf_admin_settings_page'); add_submenu_page('kcf-messages','Diagnostika','Diagnostika','manage_options','kcf-diagnostics','kcf_admin_diagnostics_page'); });
 add_action('admin_post_kcf_delete_message',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_delete_message'); global $wpdb; $id=intval($_GET['id']??0); if($id){ $wpdb->delete(KCF_TABLE,['id'=>$id]); $wpdb->delete(KCF_REPLIES_TABLE,['message_id'=>$id]); } wp_safe_redirect(admin_url('admin.php?page=kcf-messages&deleted=1')); exit; });
-add_action('admin_post_kcf_reply_message',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_reply_message'); global $wpdb; $message_id=intval($_POST['message_id']); $row=$wpdb->get_row($wpdb->prepare('SELECT email FROM '.KCF_TABLE.' WHERE id=%d',$message_id)); $to=$row?$row->email:''; $subject=sanitize_text_field(wp_unslash($_POST['subject']??'')); $body_raw=isset($_POST['body'])?wp_unslash($_POST['body']):''; $body=kcf_clean_textarea($body_raw); if($body===''){ $redirect=admin_url('admin.php?page=kcf-messages'.($message_id?('&view='.$message_id):'')); $redirect=add_query_arg('reply_error',1,$redirect); wp_safe_redirect($redirect); exit; } $user_id=get_current_user_id(); $tokens=[]; $headers=['Content-Type: text/html; charset=UTF-8']; if($message_id>0){ $tokens['KCF-ID']=$message_id; $headers[]='X-KCF-ID: '.$message_id; }
-  $reply_data=['message_id'=>$message_id,'created_at'=>current_time('mysql'),'wp_user_id'=>$user_id,'direction'=>0,'to_email'=>$to,'subject'=>$subject,'body'=>$body,'sent'=>0,'seen'=>1];
-  $wpdb->insert(KCF_REPLIES_TABLE,$reply_data,['%d','%s','%d','%d','%s','%s','%s','%d','%d']);
+add_action('admin_post_kcf_reply_message',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_reply_message'); global $wpdb; $message_id=intval($_POST['message_id']); $row=$wpdb->get_row($wpdb->prepare('SELECT email FROM '.KCF_TABLE.' WHERE id=%d',$message_id)); $to=$row?$row->email:''; $subject=sanitize_text_field(wp_unslash($_POST['subject']??'')); $body_raw=isset($_POST['body'])?wp_unslash($_POST['body']):''; $body=kcf_clean_textarea($body_raw); if($body===''){ $redirect=admin_url('admin.php?page=kcf-messages'.($message_id?('&view='.$message_id):'')); $redirect=add_query_arg('reply_error',1,$redirect); wp_safe_redirect($redirect); exit; } $user_id=get_current_user_id(); $tokens=[]; $headers=['Content-Type: text/html; charset=UTF-8']; $thread_root=$message_id>0?$message_id:0; if($message_id>0){ $tokens['KCF-ID']=$message_id; $headers[]='X-KCF-ID: '.$message_id; }
+  if($thread_root>0){ $tokens['KCF-THREAD-ID']=$thread_root; $headers[]='X-KCF-THREAD-ID: '.$thread_root; }
+  $reply_data=['message_id'=>$message_id,'thread_root'=>$thread_root,'created_at'=>current_time('mysql'),'wp_user_id'=>$user_id,'direction'=>0,'to_email'=>$to,'subject'=>$subject,'body'=>$body,'sent'=>0,'seen'=>1];
+  $wpdb->insert(KCF_REPLIES_TABLE,$reply_data,['%d','%d','%s','%d','%d','%s','%s','%s','%d','%d']);
   $reply_id=intval($wpdb->insert_id);
   $body_html=kcf_prepare_email_body($body,$tokens);
   $domain=kcf_mail_domain();
-  $message_token='kcfmsg-'.($message_id>0?$message_id:0).'-'.$reply_id;
+  $message_token='kcfmsg-'.($thread_root>0?$thread_root:0).'-'.$reply_id;
   $custom_message_id='<'.$message_token.'@'.$domain.'>';
   if($message_id>0){
     $headers[]='References: <kcfroot-'.$message_id.'@'.$domain.'>';
@@ -19,19 +20,27 @@ add_action('admin_post_kcf_reply_message',function(){ if(!current_user_can('mana
   wp_safe_redirect(admin_url('admin.php?page=kcf-messages&view='.$message_id.'&replied='.($sent?'1':'0'))); exit; });
 add_action('admin_post_kcf_delete_inbox',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_delete_inbox'); global $wpdb; $id=intval($_GET['id']??0); if($id){ $wpdb->delete(KCF_REPLIES_TABLE,['id'=>$id,'direction'=>1]); } wp_safe_redirect(admin_url('admin.php?page=kcf-inbox&deleted=1')); exit; });
 add_action('admin_post_kcf_bulk_delete_inbox',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_bulk_delete_inbox'); $ids=isset($_POST['ids'])&&is_array($_POST['ids'])?array_map('intval',$_POST['ids']):[]; $ids=array_filter($ids); $redirect=admin_url('admin.php?page=kcf-inbox'); if(!empty($_POST['redirect_to'])){ $maybe=esc_url_raw(wp_unslash($_POST['redirect_to'])); if($maybe){ $redirect=$maybe; } } if(!$ids){ wp_safe_redirect(add_query_arg('bulk_error',1,$redirect)); exit; } global $wpdb; $placeholders=implode(',',array_fill(0,count($ids),'%d')); $sql='DELETE FROM '.KCF_REPLIES_TABLE.' WHERE direction=1 AND id IN ('.$placeholders.')'; $wpdb->query($wpdb->prepare($sql,$ids)); $deleted=intval($wpdb->rows_affected); wp_safe_redirect(add_query_arg('bulk_deleted',$deleted,$redirect)); exit; });
-add_action('admin_post_kcf_reply_inbox',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_reply_inbox'); global $wpdb; $inbox_id=intval($_POST['inbox_id']??0); $redirect=admin_url('admin.php?page=kcf-inbox'); if($inbox_id){ $redirect=add_query_arg(['page'=>'kcf-inbox','view'=>$inbox_id],admin_url('admin.php')); } if(!$inbox_id){ wp_safe_redirect(add_query_arg('reply_error',1,$redirect)); exit; } $row=$wpdb->get_row($wpdb->prepare('SELECT to_email,subject,message_id FROM '.KCF_REPLIES_TABLE.' WHERE id=%d AND direction=1',$inbox_id),ARRAY_A); if(!$row){ wp_safe_redirect(add_query_arg('reply_error',1,$redirect)); exit; } $to=sanitize_email($row['to_email']); $subject=sanitize_text_field(wp_unslash($_POST['subject']??'')); $body_raw=isset($_POST['body'])?wp_unslash($_POST['body']):''; $body=kcf_clean_textarea($body_raw); if(!$to||$body===''){ wp_safe_redirect(add_query_arg('reply_error',1,$redirect)); exit; } if($subject===''){ $subject='(be temos)'; } $user_id=get_current_user_id(); $tokens=[]; if(intval($row['message_id'])>0){ $tokens['KCF-ID']=intval($row['message_id']); } $tokens['KCF-INBOX-ID']=$inbox_id; $headers=['Content-Type: text/html; charset=UTF-8','X-KCF-INBOX-ID: '.$inbox_id]; if(!empty($tokens['KCF-ID'])) $headers[]='X-KCF-ID: '.intval($row['message_id']);
-  $reply_data=['message_id'=>intval($row['message_id']),'created_at'=>current_time('mysql'),'wp_user_id'=>$user_id,'direction'=>0,'to_email'=>$to,'subject'=>$subject,'body'=>$body,'sent'=>0,'seen'=>1];
-  $wpdb->insert(KCF_REPLIES_TABLE,$reply_data,['%d','%s','%d','%d','%s','%s','%s','%d','%d']);
+add_action('admin_post_kcf_reply_inbox',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_reply_inbox'); global $wpdb; $inbox_id=intval($_POST['inbox_id']??0); $redirect=admin_url('admin.php?page=kcf-inbox'); if($inbox_id){ $redirect=add_query_arg(['page'=>'kcf-inbox','view'=>$inbox_id],admin_url('admin.php')); } if(!$inbox_id){ wp_safe_redirect(add_query_arg('reply_error',1,$redirect)); exit; } $row=$wpdb->get_row($wpdb->prepare('SELECT to_email,subject,message_id,thread_root FROM '.KCF_REPLIES_TABLE.' WHERE id=%d AND direction=1',$inbox_id),ARRAY_A); if(!$row){ wp_safe_redirect(add_query_arg('reply_error',1,$redirect)); exit; } $to=sanitize_email($row['to_email']); $subject=sanitize_text_field(wp_unslash($_POST['subject']??'')); $body_raw=isset($_POST['body'])?wp_unslash($_POST['body']):''; $body=kcf_clean_textarea($body_raw); if(!$to||$body===''){ wp_safe_redirect(add_query_arg('reply_error',1,$redirect)); exit; } if($subject===''){ $subject='(be temos)'; } $user_id=get_current_user_id(); $message_ref=intval($row['message_id']); $thread_root=intval($row['thread_root']); if($thread_root<=0){ $thread_root=$message_ref>0?$message_ref:$inbox_id; if(intval($row['thread_root'])!==$thread_root){ $wpdb->update(KCF_REPLIES_TABLE,['thread_root'=>$thread_root],['id'=>$inbox_id],['%d'],['%d']); } }
+  $tokens=[]; if($message_ref>0){ $tokens['KCF-ID']=$message_ref; }
+  $tokens['KCF-INBOX-ID']=$inbox_id; if($thread_root>0){ $tokens['KCF-THREAD-ID']=$thread_root; }
+  $headers=['Content-Type: text/html; charset=UTF-8','X-KCF-INBOX-ID: '.$inbox_id]; if($message_ref>0){ $headers[]='X-KCF-ID: '.$message_ref; }
+  if($thread_root>0){ $headers[]='X-KCF-THREAD-ID: '.$thread_root; }
+  $reply_data=['message_id'=>$message_ref,'thread_root'=>$thread_root,'created_at'=>current_time('mysql'),'wp_user_id'=>$user_id,'direction'=>0,'to_email'=>$to,'subject'=>$subject,'body'=>$body,'sent'=>0,'seen'=>1];
+  $wpdb->insert(KCF_REPLIES_TABLE,$reply_data,['%d','%d','%s','%d','%d','%s','%s','%s','%d','%d']);
   $reply_id=intval($wpdb->insert_id);
   $body_html=kcf_prepare_email_body($body,$tokens);
   $domain=kcf_mail_domain();
-  $thread_part=intval($row['message_id'])>0?intval($row['message_id']):0;
-  $custom_message_id='<kcfmsg-'.$thread_part.'-'.$reply_id.'@'.$domain.'>';
-  if($thread_part>0){
-    $headers[]='References: <kcfroot-'.$thread_part.'@'.$domain.'>';
-    $headers[]='In-Reply-To: <kcfroot-'.$thread_part.'@'.$domain.'>';
+  if($message_ref>0){
+    $message_token='kcfmsg-'.$message_ref.'-'.$reply_id;
   } else {
-    $headers[]='References: <kcfinbox-'.$inbox_id.'@'.$domain.'>';
+    $message_token='kcfinboxmsg-'.$thread_root.'-'.$reply_id;
+  }
+  $custom_message_id='<'.$message_token.'@'.$domain.'>';
+  if($message_ref>0){
+    $headers[]='References: <kcfroot-'.$message_ref.'@'.$domain.'>';
+    $headers[]='In-Reply-To: <kcfroot-'.$message_ref.'@'.$domain.'>';
+  } else {
+    $headers[]='References: <kcfinbox-'.$thread_root.'@'.$domain.'>';
     $headers[]='In-Reply-To: <kcfinbox-'.$inbox_id.'@'.$domain.'>';
   }
   $sent=kcf_wp_mail_with_message_id($to,$subject,$body_html,$headers,$custom_message_id);
@@ -39,7 +48,7 @@ add_action('admin_post_kcf_reply_inbox',function(){ if(!current_user_can('manage
   wp_safe_redirect(add_query_arg('replied',$sent?1:0,$redirect)); exit; });
 add_action('admin_post_kcf_check_imap_now',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_check_imap_now'); do_action('kcf_check_mail_event'); wp_safe_redirect(admin_url('admin.php?page=kcf-diagnostics')); exit; });
 function kcf_mark_message_seen($id){ global $wpdb; $wpdb->update(KCF_TABLE,['seen'=>1],['id'=>$id]); $wpdb->query($wpdb->prepare('UPDATE '.KCF_REPLIES_TABLE.' SET seen=1 WHERE message_id=%d AND seen=0',$id)); }
-function kcf_mark_inbox_seen($id){ global $wpdb; $wpdb->update(KCF_REPLIES_TABLE,['seen'=>1],['id'=>$id]); }
+function kcf_mark_inbox_seen($id){ global $wpdb; $row=$wpdb->get_row($wpdb->prepare('SELECT thread_root FROM '.KCF_REPLIES_TABLE.' WHERE id=%d',$id)); if($row){ $thread_root=intval($row->thread_root); if($thread_root>0){ $wpdb->query($wpdb->prepare('UPDATE '.KCF_REPLIES_TABLE.' SET seen=1 WHERE (thread_root=%d AND thread_root<>0) OR id=%d',$thread_root,$id)); return; } } $wpdb->update(KCF_REPLIES_TABLE,['seen'=>1],['id'=>$id]); }
 function kcf_admin_maybe_check_imap(){ static $done=false; if($done) return; $done=true; do_action('kcf_check_mail_event'); }
 function kcf_admin_messages_page(){ if(!current_user_can('manage_options')) return; global $wpdb; $table=KCF_TABLE; $highlight_script='<script>(function(){document.addEventListener("DOMContentLoaded",function(){var highlightEls=document.querySelectorAll(".kcf-highlight");if(!highlightEls.length)return;setTimeout(function(){highlightEls.forEach(function(el){el.classList.add("kcf-fade-end");setTimeout(function(){el.classList.remove("kcf-fade-end");el.classList.remove("kcf-highlight");},800);});},60000);});})();</script>';
   kcf_admin_maybe_check_imap(); echo '<div class="wrap"><h1>Kodra žinutės</h1><style>.kcf-highlight{background:#fff3cd!important;transition:background-color .6s ease;}.kcf-highlight.kcf-fade-end{background:#fff!important;}</style>';
@@ -71,10 +80,31 @@ function kcf_admin_inbox_page(){ if(!current_user_can('manage_options')) return;
   if(isset($_GET['reply_error'])) echo '<div class="error notice notice-error"><p>Patikrinkite atsakymo laukus.</p></div>';
   $q=sanitize_text_field($_GET['q']??''); echo '<form method="get" style="margin:8px 0 12px"><input type="hidden" name="page" value="kcf-inbox"><input type="text" name="q" value="'.esc_attr($q).'" placeholder="Paieška (tema, siuntėjas, žinutė)" style="min-width:340px;margin-right:6px"><button class="button button-primary">Ieškoti</button> <a class="button" href="'.admin_url('admin.php?page=kcf-inbox').'">Išvalyti</a></form>';
   if(isset($_GET['view'])){ $id=intval($_GET['view']); $sql="SELECT r.*, m.name AS message_name FROM {$table} r LEFT JOIN ".KCF_TABLE." m ON m.id=r.message_id WHERE r.id=%d AND r.direction=1"; $row=$wpdb->get_row($wpdb->prepare($sql,$id),ARRAY_A); echo '<h2>#'.intval($id).'</h2>';
-    if($row){ $related='-'; if(intval($row['message_id'])>0){ $link=admin_url('admin.php?page=kcf-messages&view='.$row['message_id']); $label='#'.intval($row['message_id']); if(!empty($row['message_name'])) $label.=' ('.wp_strip_all_tags($row['message_name']).')'; $related='<a href="'.esc_url($link).'">'.esc_html($label).'</a>'; }
+    if($row){ $message_ref=intval($row['message_id']); $related='-'; if($message_ref>0){ $link=admin_url('admin.php?page=kcf-messages&view='.$message_ref); $label='#'.$message_ref; if(!empty($row['message_name'])) $label.=' ('.wp_strip_all_tags($row['message_name']).')'; $related='<a href="'.esc_url($link).'">'.esc_html($label).'</a>'; }
+      $thread_root=intval($row['thread_root']); if($thread_root<=0){ $thread_root=$message_ref>0?$message_ref:$id; if(intval($row['thread_root'])!==$thread_root){ $wpdb->update(KCF_REPLIES_TABLE,['thread_root'=>$thread_root],['id'=>$id],['%d'],['%d']); } }
       $sender=$row['to_email']!==''?$row['to_email']:'—'; $subject=$row['subject']!==''?$row['subject']:'(be temos)';
       echo '<table class="widefat striped" style="max-width:720px"><tbody><tr><th style="width:180px">Siuntėjas</th><td>'.esc_html($sender).'</td></tr><tr><th>Tema</th><td>'.esc_html($subject).'</td></tr><tr><th>Gauta</th><td>'.esc_html($row['created_at']).'</td></tr><tr><th>Susieta žinutė</th><td>'.$related.'</td></tr></tbody></table>';
       echo '<div style="margin-top:18px"><h3>Žinutė</h3><div style="background:#fff;border:1px solid #ddd;padding:16px;max-width:720px;word-break:break-word">'.nl2br(esc_html($row['body'])).'</div></div>';
+      $thread_sql="SELECT r.*, u.display_name FROM ".KCF_REPLIES_TABLE." r LEFT JOIN {$wpdb->users} u ON u.ID=r.wp_user_id WHERE ";
+      $thread_params=[];
+      if($thread_root>0){
+        $thread_sql.='(r.thread_root=%d)';
+        $thread_params[]=$thread_root;
+        if($message_ref>0){
+          $thread_sql.=' OR (r.thread_root=0 AND r.message_id=%d)';
+          $thread_params[]=$message_ref;
+        } else {
+          $thread_sql.=' OR (r.thread_root=0 AND r.id=%d)';
+          $thread_params[]=$thread_root;
+        }
+      } else {
+        $thread_sql.='r.id=%d';
+        $thread_params[]=$id;
+      }
+      $thread_sql.=' ORDER BY r.id ASC';
+      $thread_items=$thread_params? $wpdb->get_results($wpdb->prepare($thread_sql,$thread_params),ARRAY_A) : [];
+      echo '<hr><h2>Susirašinėjimo gija</h2>';
+      if($thread_items){ $total=count($thread_items); $i=0; echo '<ul class="kcf-thread" id="kcf-thread">'; foreach($thread_items as $rep){ $i++; $by=intval($rep['direction'])===1?'Klientas':(!empty($rep['display_name'])?$rep['display_name']:'Admin'); $cls=intval($rep['seen'])===0?' kcf-unread-burst kcf-highlight':''; if($i===$total){ $cls.=' kcf-latest'; } $clean=function_exists('kcf_trim_body_for_admin')?kcf_trim_body_for_admin($rep['body']):$rep['body']; echo '<li class="kcf-thread-item'.$cls.'"><div><strong>'.esc_html($rep['subject']).'</strong></div><div><em>'.esc_html($rep['created_at']).'</em> — '.esc_html($by).'</div><div style="word-break:break-word">'.wp_kses_post(nl2br(esc_html($clean))).'</div></li>'; } echo '</ul>'.$highlight_script; } else { echo '<p>Gijoje dar nėra įrašų.</p>'; }
       $default_subject=$row['subject']!==''?'Re: '.$row['subject']:'Atsakymas į Jūsų laišką';
       if(intval($row['message_id'])>0){ $needle='[KCF #'.intval($row['message_id']).']'; if(strpos($default_subject,$needle)===false){ $default_subject=$needle.' '.$default_subject; } }
       echo '<hr><h2>Atsakyti</h2><form method="post" action="'.esc_url(admin_url('admin-post.php?action=kcf_reply_inbox')).'" style="max-width:720px">';
@@ -89,9 +119,9 @@ function kcf_admin_inbox_page(){ if(!current_user_can('manage_options')) return;
     echo '</div>';
     return;
   }
-  $where='WHERE r.direction=1'; $params=[]; if($q){ $like='%'.$wpdb->esc_like($q).'%'; $where.=' AND (r.subject LIKE %s OR r.to_email LIKE %s OR r.body LIKE %s)'; $params=[$like,$like,$like]; }
+  $where='WHERE r.direction=1 AND (r.thread_root=0 OR r.thread_root=r.id)'; $params=[]; if($q){ $like='%'.$wpdb->esc_like($q).'%'; $where.=' AND (r.subject LIKE %s OR r.to_email LIKE %s OR r.body LIKE %s)'; $params=[$like,$like,$like]; }
   $per=20; $paged=max(1,intval($_GET['paged']??1)); $off=($paged-1)*$per; $sql_total="SELECT COUNT(*) FROM {$table} r $where"; $total=(int)($params? $wpdb->get_var($wpdb->prepare($sql_total,$params)) : $wpdb->get_var($sql_total));
-  $sql_items="SELECT r.id,r.created_at,r.subject,r.to_email,r.body,r.seen,r.message_id,m.name AS message_name FROM {$table} r LEFT JOIN ".KCF_TABLE." m ON m.id=r.message_id $where ORDER BY r.id DESC LIMIT %d OFFSET %d";
+  $sql_items="SELECT r.id,r.created_at,r.subject,r.to_email,r.body,r.seen,r.message_id,r.thread_root,m.name AS message_name FROM {$table} r LEFT JOIN ".KCF_TABLE." m ON m.id=r.message_id $where ORDER BY r.id DESC LIMIT %d OFFSET %d";
   if($params){ $args=array_merge($params,[$per,$off]); $items=$wpdb->get_results($wpdb->prepare($sql_items,$args),ARRAY_A); }
   else { $items=$wpdb->get_results($wpdb->prepare($sql_items,$per,$off),ARRAY_A); }
   $base=admin_url('admin.php?page=kcf-inbox'); $current_url=isset($_SERVER['REQUEST_URI'])?esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])):''; echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'" id="kcf-inbox-form">'; echo '<input type="hidden" name="action" value="kcf_bulk_delete_inbox">'; wp_nonce_field('kcf_bulk_delete_inbox'); echo '<input type="hidden" name="redirect_to" value="'.esc_attr($current_url).'">'; echo '<div class="tablenav top"><div class="alignleft actions bulkactions"><button type="submit" class="button kcf-bulk-delete" disabled>Trinti pažymėtus</button></div></div>';

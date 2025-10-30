@@ -5,7 +5,7 @@ function kcf_log($msg){ $log=get_option('kcf_log',[]); $log[]='['.current_time('
 function kcf_trim_body_for_admin($body){
   $b=str_replace(['<br />','<br/>','<br>'],"\n",$body);
   $b=str_replace(["\r\n","\r"],"\n",$b);
-  $patterns=['/\n\s*20\d{2}-\d{2}-\d{2}.*?rašė.*$/su','/\n\s*On .+ wrote:.*/su','/\n\s*[-]{2,}\s*\nKCF-ID:.*/su','/\n\s*[-]{2,}\s*\nKCF-INBOX-ID:.*/su','/\n<!--\s*KCF-ID:\s*\d+\s*-->/i','/\n<!--\s*KCF-INBOX-ID:\s*\d+\s*-->/i','/\n>.*$/su'];
+  $patterns=['/\n\s*20\d{2}-\d{2}-\d{2}.*?rašė.*$/su','/\n\s*On .+ wrote:.*/su','/\n\s*[-]{2,}\s*\nKCF-ID:.*/su','/\n\s*[-]{2,}\s*\nKCF-INBOX-ID:.*/su','/\n\s*[-]{2,}\s*\nKCF-THREAD-ID:.*/su','/\n<!--\s*KCF-ID:\s*\d+\s*-->/i','/\n<!--\s*KCF-INBOX-ID:\s*\d+\s*-->/i','/\n<!--\s*KCF-THREAD-ID:\s*\d+\s*-->/i','/\n>.*$/su'];
   foreach($patterns as $p){ if(preg_match($p,$b,$m,PREG_OFFSET_CAPTURE)){ $b=substr($b,0,$m[0][1]); break; } }
   return trim($b);
 }

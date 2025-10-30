@@ -11,9 +11,11 @@ function kcf_handle_submit(){
   if(empty($vardas)||empty($telefonas)||empty($email)||empty($zinute)||!is_email($email)) wp_send_json_error(['message'=>'Patikrinkite privalomus laukus.'],422);
   if(!preg_match('/^\+3706\d{7}$/',$telefonas)) wp_send_json_error(['message'=>'Telefono numeris turi būti formatu +3706xxxxxxx.'],422);
   $id=kcf_store_message(['vardas'=>$vardas,'imone'=>$imone,'telefonas'=>$telefonas,'email'=>$email,'zinute'=>$zinute]);
-  $to=get_option('admin_email'); $headers=[ 'Content-Type: text/html; charset=UTF-8','Reply-To: '.$vardas.' <'.$email.'>','X-KCF-ID: '.$id ];
-  $body='<h2>Kontaktinė forma</h2><p><strong>Vardas:</strong> '.esc_html($vardas).'</p>'.($imone?'<p><strong>Įmonė:</strong> '.esc_html($imone).'</p>':'').'<p><strong>Telefonas:</strong> '.esc_html($telefonas).'</p><p><strong>El. paštas:</strong> '.esc_html($email).'</p><p><strong>Žinutė:</strong><br>'.nl2br(esc_html($zinute)).'</p><!-- KCF-ID: '.intval($id).' -->';
-  wp_mail($to,'[KCF #'.strval($id).'] Nauja žinutė iš '.$vardas,$body,$headers);
+  $to=get_option('admin_email'); $headers=[ 'Content-Type: text/html; charset=UTF-8','Reply-To: '.$vardas.' <'.$email.'>','X-KCF-ID: '.$id,'X-KCF-THREAD-ID: '.$id ];
+  $body='<h2>Kontaktinė forma</h2><p><strong>Vardas:</strong> '.esc_html($vardas).'</p>'.($imone?'<p><strong>Įmonė:</strong> '.esc_html($imone).'</p>':'').'<p><strong>Telefonas:</strong> '.esc_html($telefonas).'</p><p><strong>El. paštas:</strong> '.esc_html($email).'</p><p><strong>Žinutė:</strong><br>'.nl2br(esc_html($zinute)).'</p><!-- KCF-ID: '.intval($id).' --><!-- KCF-THREAD-ID: '.intval($id).' -->';
+  $domain=kcf_mail_domain();
+  $custom_message_id='<kcfroot-'.$id.'@'.$domain.'>';
+  kcf_wp_mail_with_message_id($to,'[KCF #'.strval($id).'] Nauja žinutė iš '.$vardas,$body,$headers,$custom_message_id);
   wp_send_json_success(['message'=>'Ačiū! Jūsų žinutė sėkmingai išsiųsta.']);
 }
 add_action('wp_ajax_kcf_submit','kcf_handle_submit'); add_action('wp_ajax_nopriv_kcf_submit','kcf_handle_submit'); ?>
