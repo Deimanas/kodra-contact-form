@@ -3,62 +3,82 @@ name: Build & Release WordPress Plugin ZIP
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'   # e.g., v1.6.4.3
 
 permissions:
   contents: write
 
+env:
+  SLUG: kodra-contact-form
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      PLUGIN_SLUG: kodra-contact-form
-      MAIN_FILE: kodra-contact-form.php
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify version header matches tag
-        shell: bash
+      - name: Derive version from tag
+        id: ver
         run: |
           VERSION="${GITHUB_REF#refs/tags/}"
           VERSION="${VERSION#v}"
-          echo "Tag version: $VERSION"
-          if [ ! -f "$MAIN_FILE" ]; then
-            echo "::error file=$MAIN_FILE::Main plugin file not found. Adjust MAIN_FILE in workflow env."
-            exit 1
-          fi
-          if ! grep -E "^[[:space:]]*(\\*|)//?[[:space:]]*Version:[[:space:]]*$VERSION\\b" "$MAIN_FILE" && \
-             ! grep -E "^[[:space:]]*Version:[[:space:]]*$VERSION\\b" "$MAIN_FILE"; then
-            echo "::error file=$MAIN_FILE::Version header does not match tag $VERSION"
-            echo "Ensure the header 'Version: $VERSION' is set in $MAIN_FILE."
-            exit 1
-          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build plugin ZIP (stable slug inside ZIP)
-        shell: bash
+      - name: Inject version into plugin headers (PHP + readme.txt, if present)
         run: |
           set -e
-          rm -rf build
-          mkdir -p "build/$PLUGIN_SLUG"
-          rsync -a ./ "build/$PLUGIN_SLUG"/ \
-            --exclude '.git' \
-            --exclude '.gitignore' \
-            --exclude '.github' \
-            --exclude '.vscode' \
-            --exclude 'node_modules' \
-            --exclude 'build' \
-            --exclude '*.zip' \
-            --exclude '*.yml' \
-            --exclude '*.yaml' \
-            --exclude '*.md'
-          cd build
-          zip -r "../$PLUGIN_SLUG.zip" "$PLUGIN_SLUG"
+          VERSION="${{ steps.ver.outputs.VERSION }}"
+          MAIN_FILE="${{ env.SLUG }}.php"
+
+          if [ -f "$MAIN_FILE" ]; then
+            # Update the 'Version:' header line
+            sed -i -E "s/^(\s*\*\s*Version:\s*).*/\1${VERSION}/" "$MAIN_FILE"
+          else
+            echo "Warning: $MAIN_FILE not found – skipping PHP header bump."
+          fi
+
+          if [ -f "readme.txt" ]; then
+            # Update the Stable tag in readme.txt (WordPress standard)
+            sed -i -E "s/^(Stable tag:\s*).*/\1${VERSION}/I" "readme.txt"
+          fi
+
+      - name: Verify version header matches tag (after injection)
+        run: |
+          set -e
+          VERSION="${{ steps.ver.outputs.VERSION }}"
+          MAIN_FILE="${{ env.SLUG }}.php"
+          if [ -f "$MAIN_FILE" ]; then
+            if ! grep -E "^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*${VERSION}\s*$" "$MAIN_FILE" > /dev/null; then
+              echo "Error: Version header does not match tag ${VERSION} in ${MAIN_FILE}."
+              exit 1
+            fi
+          fi
+          echo "Version header OK: ${VERSION}"
+
+      - name: Build plugin ZIP (stable slug directory inside)
+        run: |
+          set -e
+          VERSION="${{ steps.ver.outputs.VERSION }}"
+          SLUG="${{ env.SLUG }}"
+          WORKDIR="$(mktemp -d)"
+          DEST="${WORKDIR}/${SLUG}"
+          mkdir -p "$DEST"
+
+          # Copy repository files into a folder named after the plugin slug
+          rsync -a --exclude ".git"                  --exclude ".github"                  --exclude "*.zip"                  --exclude "node_modules"                  --exclude ".DS_Store"                  --exclude "README.md"                  ./ "$DEST/"
+
+          # Create versioned release asset with a stable inner folder name
+          ZIP_NAME="${SLUG}-v${VERSION}.zip"
+          ( cd "$WORKDIR" && zip -r "$ZIP_NAME" "$SLUG" >/dev/null )
+          mv "$WORKDIR/$ZIP_NAME" "./$ZIP_NAME"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.PLUGIN_SLUG }}.zip
+          files: ${{ steps.build.outputs.ZIP_NAME }}
+          tag_name: ${{ github.ref_name }}
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
