@@ -9,12 +9,12 @@ add_action('admin_post_kcf_reply_message',function(){ if(!current_user_can('mana
   $body_html=kcf_prepare_email_body($body,$tokens);
   $domain=kcf_mail_domain();
   $message_token='kcfmsg-'.($message_id>0?$message_id:0).'-'.$reply_id;
-  $headers[]='Message-ID: <'.$message_token.'@'.$domain.'>';
+  $custom_message_id='<'.$message_token.'@'.$domain.'>';
   if($message_id>0){
     $headers[]='References: <kcfroot-'.$message_id.'@'.$domain.'>';
     $headers[]='In-Reply-To: <kcfroot-'.$message_id.'@'.$domain.'>';
   }
-  $sent=wp_mail($to,$subject,$body_html,$headers);
+  $sent=kcf_wp_mail_with_message_id($to,$subject,$body_html,$headers,$custom_message_id);
   if($sent){ $wpdb->update(KCF_REPLIES_TABLE,['sent'=>1],['id'=>$reply_id],['%d'],['%d']); }
   wp_safe_redirect(admin_url('admin.php?page=kcf-messages&view='.$message_id.'&replied='.($sent?'1':'0'))); exit; });
 add_action('admin_post_kcf_delete_inbox',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_delete_inbox'); global $wpdb; $id=intval($_GET['id']??0); if($id){ $wpdb->delete(KCF_REPLIES_TABLE,['id'=>$id,'direction'=>1]); } wp_safe_redirect(admin_url('admin.php?page=kcf-inbox&deleted=1')); exit; });
@@ -26,7 +26,7 @@ add_action('admin_post_kcf_reply_inbox',function(){ if(!current_user_can('manage
   $body_html=kcf_prepare_email_body($body,$tokens);
   $domain=kcf_mail_domain();
   $thread_part=intval($row['message_id'])>0?intval($row['message_id']):0;
-  $headers[]='Message-ID: <kcfmsg-'.$thread_part.'-'.$reply_id.'@'.$domain.'>';
+  $custom_message_id='<kcfmsg-'.$thread_part.'-'.$reply_id.'@'.$domain.'>';
   if($thread_part>0){
     $headers[]='References: <kcfroot-'.$thread_part.'@'.$domain.'>';
     $headers[]='In-Reply-To: <kcfroot-'.$thread_part.'@'.$domain.'>';
@@ -34,7 +34,7 @@ add_action('admin_post_kcf_reply_inbox',function(){ if(!current_user_can('manage
     $headers[]='References: <kcfinbox-'.$inbox_id.'@'.$domain.'>';
     $headers[]='In-Reply-To: <kcfinbox-'.$inbox_id.'@'.$domain.'>';
   }
-  $sent=wp_mail($to,$subject,$body_html,$headers);
+  $sent=kcf_wp_mail_with_message_id($to,$subject,$body_html,$headers,$custom_message_id);
   if($sent){ $wpdb->update(KCF_REPLIES_TABLE,['sent'=>1],['id'=>$reply_id],['%d'],['%d']); }
   wp_safe_redirect(add_query_arg('replied',$sent?1:0,$redirect)); exit; });
 add_action('admin_post_kcf_check_imap_now',function(){ if(!current_user_can('manage_options')) wp_die('Unauthorized'); check_admin_referer('kcf_check_imap_now'); do_action('kcf_check_mail_event'); wp_safe_redirect(admin_url('admin.php?page=kcf-diagnostics')); exit; });

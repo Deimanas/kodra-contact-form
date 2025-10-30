@@ -47,4 +47,19 @@ function kcf_prepare_email_body($text,$tokens=[]){
   }
   return $html;
 }
+function kcf_wp_mail_with_message_id($to,$subject,$message,$headers,$message_id=''){
+  $filter_handle=null;
+  if(is_string($message_id)&&$message_id!==''){
+    $filter=function($generated) use ($message_id){
+      return $message_id;
+    };
+    add_filter('wp_mail_message_id',$filter);
+    $filter_handle=$filter;
+  }
+  $result=wp_mail($to,$subject,$message,$headers);
+  if($filter_handle){
+    remove_filter('wp_mail_message_id',$filter_handle);
+  }
+  return $result;
+}
 ?>
