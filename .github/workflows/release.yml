@@ -3,19 +3,24 @@ on:
   push:
     tags:
       - 'v*'
+
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Build plugin zip
-        run: zip -r kodra-contact-form.zip -x "*.git*" -x "*.github/*"
+        run: |
+          zip -r kodra-contact-form.zip . \
+            -x ".git/*" ".github/*" ".gitignore" "README.md" "kodra-contact-form.zip"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            kodra-contact-form.zip
+          files: kodra-contact-form.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
