@@ -11,5 +11,4 @@ function kcf_contact_form_shortcode(){ wp_enqueue_style('kcf-style'); wp_enqueue
   <div class="kcf-field kcf-field-full"><label>Žinutė *</label><textarea name="zinute" required rows="5" placeholder="Žinutė"></textarea></div>
 </div>
 <div class="kcf-actions"><button type="submit" class="kcf-button">Siųsti žinutę</button></div>
-<input type="text" name="website" class="kcf-hp" tabindex="-1" autocomplete="off"><div class="kcf-msg" aria-live="polite"></div></form>
 <?php return ob_get_clean(); } add_shortcode('kodra_contact_form','kcf_contact_form_shortcode'); ?>
