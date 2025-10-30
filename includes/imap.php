@@ -19,9 +19,37 @@ add_action('kcf_check_mail_event',function(){
       $raw=imap_fetchheader($inbox,$no); $h=imap_headerinfo($inbox,$no); $subject=isset($h->subject)?imap_utf8($h->subject):'';
       $structure=imap_fetchstructure($inbox,$no); $body=''; if(isset($structure->parts)){ for($i=1;$i<=count($structure->parts);$i++){ $p=$structure->parts[$i-1]; if($p->type==0){ $c=imap_fetchbody($inbox,$no,$i); if($p->encoding==3)$c=base64_decode($c); elseif($p->encoding==4)$c=quoted_printable_decode($c); $body.=$c; } } } else { $body=imap_body($inbox,$no); }
       $id=kcf_extract_kcf_id($subject,$raw,$body); kcf_log('Email #'.strval($no).' subj="'.$subject.'" -> KCF-ID='.strval($id));
-      if($id>0){ $fromaddr=(isset($h->from[0]->mailbox)&&isset($h->from[0]->host))?$h->from[0]->mailbox.'@'.$h->from[0]->host:'';
-        $wpdb->insert(KCF_REPLIES_TABLE,['message_id'=>$id,'created_at'=>current_time('mysql'),'wp_user_id'=>0,'direction'=>1,'to_email'=>$fromaddr,'subject'=>$subject,'body'=>wp_strip_all_tags($body),'sent'=>1,'seen'=>0],['%d','%s','%d','%d','%s','%s','%s','%d','%d']); kcf_log('Stored inbound reply for message '.$id);
-      } else { kcf_log('Skipped email #'.$no.' (no KCF-ID)'); }
+      $fromaddr='';
+      if(isset($h->fromaddress)&&$h->fromaddress){
+        $parsed=imap_rfc822_parse_adrlist($h->fromaddress,'');
+        if(!empty($parsed)&&isset($parsed[0]->mailbox)&&isset($parsed[0]->host)){
+          $fromaddr=$parsed[0]->mailbox.'@'.$parsed[0]->host;
+        }
+      }
+      if(!$fromaddr && isset($h->from[0]->mailbox) && isset($h->from[0]->host)){
+        $fromaddr=$h->from[0]->mailbox.'@'.$h->from[0]->host;
+      }
+      $message_id=$id>0?$id:0;
+      $wpdb->insert(
+        KCF_REPLIES_TABLE,
+        [
+          'message_id'=>$message_id,
+          'created_at'=>current_time('mysql'),
+          'wp_user_id'=>0,
+          'direction'=>1,
+          'to_email'=>$fromaddr,
+          'subject'=>$subject,
+          'body'=>wp_strip_all_tags($body),
+          'sent'=>1,
+          'seen'=>0,
+        ],
+        ['%d','%s','%d','%d','%s','%s','%s','%d','%d']
+      );
+      if($message_id>0){
+        kcf_log('Stored inbound reply for message '.$message_id);
+      } else {
+        kcf_log('Stored inbound email without KCF-ID in inbox');
+      }
       imap_setflag_full($inbox,(string)$no,"\\Seen");
     }
   } else { kcf_log('No unseen emails.'); }
