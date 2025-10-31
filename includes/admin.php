@@ -80,8 +80,11 @@ function kcf_admin_messages_page(){ if(!current_user_can('manage_options')) retu
         $clean=function_exists('kcf_trim_body_for_admin')?kcf_trim_body_for_admin($rep['body']):$rep['body'];
         $subject_display=kcf_decode_mime_header($rep['subject']);
         $checkbox='<div class="kcf-thread-checkbox"><input type="checkbox" class="kcf-thread-row" name="ids[]" value="'.intval($rep['id']).'" aria-label="Pažymėti įrašą #'.intval($rep['id']).'"></div>';
-        $body='<div class="kcf-thread-body"><div><strong>'.esc_html($subject_display).'</strong></div><div><em>'.esc_html($rep['created_at']).'</em> — '.esc_html($by).'</div><div style="word-break:break-word">'.wp_kses_post(nl2br(esc_html($clean))).'</div></div>';
-        echo '<li class="kcf-thread-item'.$cls.'">'.$body.$checkbox.'</li>';
+        $header='<div class="kcf-thread-header"><strong>'.esc_html($subject_display).'</strong>'.$checkbox.'</div>';
+        $meta='<div class="kcf-thread-meta"><em>'.esc_html($rep['created_at']).'</em> — '.esc_html($by).'</div>';
+        $content='<div class="kcf-thread-content">'.wp_kses_post(nl2br(esc_html($clean))).'</div>';
+        $body='<div class="kcf-thread-body">'.$header.$meta.$content.'</div>';
+        echo '<li class="kcf-thread-item'.$cls.'">'.$body.'</li>';
       }
       echo '</ul></div></div></form>'.$thread_bulk_script.$highlight_script;
     } else {
@@ -154,15 +157,21 @@ function kcf_admin_inbox_page(){ if(!current_user_can('manage_options')) return;
           $subj=kcf_decode_mime_header($item['subject']);
           $body_clean=function_exists('kcf_trim_body_for_admin')?kcf_trim_body_for_admin($item['body']):$item['body'];
           $checkbox='';
+          $header_subject=esc_html($subj!==''?$subj:'(be temos)');
           if($has_inbound){
             if(intval($item['direction'])===1){
               $checkbox='<div class="kcf-thread-checkbox"><input type="checkbox" class="kcf-thread-row" name="ids[]" value="'.intval($item['id']).'" aria-label="Pažymėti laišką #'.intval($item['id']).'"></div>';
             } else {
-              $checkbox='<div class="kcf-thread-checkbox"></div>';
+              $checkbox='<div class="kcf-thread-checkbox" aria-hidden="true"></div>';
             }
+            $header='<div class="kcf-thread-header"><strong>'.$header_subject.'</strong>'.$checkbox.'</div>';
+          } else {
+            $header='<div class="kcf-thread-header"><strong>'.$header_subject.'</strong></div>';
           }
-          $body='<div class="kcf-thread-body"><div><strong>'.esc_html($subj!==''?$subj:'(be temos)').'</strong></div><div><em>'.esc_html($item['created_at']).'</em> — '.esc_html($by).'</div><div style="word-break:break-word">'.wp_kses_post(nl2br(esc_html($body_clean))).'</div></div>';
-          echo '<li class="kcf-thread-item'.$cls.'">'.$body.$checkbox.'</li>';
+          $meta='<div class="kcf-thread-meta"><em>'.esc_html($item['created_at']).'</em> — '.esc_html($by).'</div>';
+          $content='<div class="kcf-thread-content">'.wp_kses_post(nl2br(esc_html($body_clean))).'</div>';
+          $body='<div class="kcf-thread-body">'.$header.$meta.$content.'</div>';
+          echo '<li class="kcf-thread-item'.$cls.'">'.$body.'</li>';
         }
         echo '</ul>';
         if($has_inbound){

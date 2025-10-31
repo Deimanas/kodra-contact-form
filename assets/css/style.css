@@ -24,11 +24,16 @@
 .kcf-thread-controls .kcf-thread-bulk-actions .button{width:100%;justify-content:center}
 .kcf-thread-list{flex:1 1 auto;min-width:0}
 .kcf-thread{list-style:none;padding-left:0;margin:0}
-.kcf-thread-item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;background:#fff}
+.kcf-thread-item{display:block;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;background:#fff}
 .kcf-thread-item.kcf-latest strong{font-weight:500}
-.kcf-thread-checkbox{min-width:48px;display:flex;align-items:center;justify-content:center;align-self:center}
+.kcf-thread-body{display:flex;flex-direction:column;gap:6px;min-width:0}
+.kcf-thread-header{display:flex;align-items:center;gap:12px;min-width:0}
+.kcf-thread-header strong{flex:1 1 auto;min-width:0;word-break:break-word}
+.kcf-thread-checkbox{min-width:48px;display:flex;align-items:center;justify-content:center}
+.kcf-thread-checkbox[aria-hidden="true"]{visibility:hidden}
 .kcf-thread-checkbox input{margin:0}
-.kcf-thread-body{flex:1;min-width:0}
+.kcf-thread-meta{font-size:13px;color:#4a5568}
+.kcf-thread-content{word-break:break-word}
 .kcf-thread-bulk-actions{display:flex;align-items:center;gap:12px;margin:12px 0}
 .kcf-thread-bulk-actions label{display:flex;align-items:center;gap:6px;margin:0}
 @media (max-width:900px){
