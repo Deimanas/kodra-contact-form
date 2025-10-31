@@ -2,12 +2,12 @@
 <?php
 /**
   * Plugin Name: Kodra Contact Form
- * Version: 1.6.5.0
+ * Version: 1.6.5.3
  * GitHub Plugin URI: https://github.com/Deimanas/kodra-contact-form
  * Primary Branch: main
  */
 if(!defined('ABSPATH')) exit;
-define('KCF_VERSION','1.6.5.0'); define('KCF_PATH', plugin_dir_path(__FILE__)); define('KCF_URL', plugin_dir_url(__FILE__));
+define('KCF_VERSION','1.6.5.3'); define('KCF_PATH', plugin_dir_path(__FILE__)); define('KCF_URL', plugin_dir_url(__FILE__));
 define('KCF_SCHEMA_VERSION','2025110101');
 add_filter('upgrader_source_selection',function($source,$remote_source,$upgrader,$hook_extra){
   if(empty($hook_extra['plugin'])||$hook_extra['plugin']!==plugin_basename(__FILE__)) return $source;
