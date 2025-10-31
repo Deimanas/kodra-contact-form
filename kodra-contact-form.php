@@ -2,7 +2,7 @@
 <?php
 /**
   * Plugin Name: Kodra Contact Form
- * Version: 1.7.0.0
+ * Version: 1.7.2
  * GitHub Plugin URI: https://github.com/Deimanas/kodra-contact-form
  * Primary Branch: main
  */
