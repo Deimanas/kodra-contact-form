@@ -9,7 +9,11 @@ function kcf_handle_submit(){
   if(!kcf_verify_recaptcha()) wp_send_json_error(['message'=>'reCAPTCHA nepraėjo.'],403);
   $vardas=kcf_sanitize_text($_POST['vardas']??''); $imone=kcf_sanitize_text($_POST['imone']??''); $telefonas=preg_replace('/[^\d\+]/','',trim($_POST['telefonas']??'')); $email=sanitize_email($_POST['email']??''); $zinute=kcf_sanitize_text($_POST['zinute']??'');
   if(empty($vardas)||empty($telefonas)||empty($email)||empty($zinute)||!is_email($email)) wp_send_json_error(['message'=>'Patikrinkite privalomus laukus.'],422);
-  if(!preg_match('/^\+3706\d{7}$/',$telefonas)) wp_send_json_error(['message'=>'Telefono numeris turi būti formatu +3706xxxxxxx.'],422);
+  $valid=false; $prefixes=kcf_phone_prefixes();
+  if(is_array($prefixes)){
+    foreach($prefixes as $p){ $value=isset($p['value'])?preg_replace('/[^\d\+]/','',(string)$p['value']):''; $length=isset($p['length'])?intval($p['length']):0; if($value===''||$length<=0) continue; if(strpos($telefonas,$value)===0){ $rest=substr($telefonas,strlen($value)); if(strlen($rest)===$length&&ctype_digit($rest)){ $valid=true; break; } } }
+  }
+  if(!$valid) wp_send_json_error(['message'=>'Telefono numeris turi atitikti pasirinkto prefikso formatą.'],422);
   $id=kcf_store_message(['vardas'=>$vardas,'imone'=>$imone,'telefonas'=>$telefonas,'email'=>$email,'zinute'=>$zinute]);
   $to=get_option('admin_email'); $headers=[ 'Content-Type: text/html; charset=UTF-8','Reply-To: '.$vardas.' <'.$email.'>','X-KCF-ID: '.$id ];
   $body='<h2>Kontaktinė forma</h2><p><strong>Vardas:</strong> '.esc_html($vardas).'</p>'.($imone?'<p><strong>Įmonė:</strong> '.esc_html($imone).'</p>':'').'<p><strong>Telefonas:</strong> '.esc_html($telefonas).'</p><p><strong>El. paštas:</strong> '.esc_html($email).'</p><p><strong>Žinutė:</strong><br>'.nl2br(esc_html($zinute)).'</p><!-- KCF-ID: '.intval($id).' -->';
