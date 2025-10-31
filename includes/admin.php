@@ -80,7 +80,8 @@ function kcf_admin_messages_page(){ if(!current_user_can('manage_options')) retu
         $clean=function_exists('kcf_trim_body_for_admin')?kcf_trim_body_for_admin($rep['body']):$rep['body'];
         $subject_display=kcf_decode_mime_header($rep['subject']);
         $checkbox='<div class="kcf-thread-checkbox"><input type="checkbox" class="kcf-thread-row" name="ids[]" value="'.intval($rep['id']).'" aria-label="Pažymėti įrašą #'.intval($rep['id']).'"></div>';
-        echo '<li class="kcf-thread-item'.$cls.'">'.$checkbox.'<div class="kcf-thread-body"><div><strong>'.esc_html($subject_display).'</strong></div><div><em>'.esc_html($rep['created_at']).'</em> — '.esc_html($by).'</div><div style="word-break:break-word">'.wp_kses_post(nl2br(esc_html($clean))).'</div></div></li>';
+        $body='<div class="kcf-thread-body"><div><strong>'.esc_html($subject_display).'</strong></div><div><em>'.esc_html($rep['created_at']).'</em> — '.esc_html($by).'</div><div style="word-break:break-word">'.wp_kses_post(nl2br(esc_html($clean))).'</div></div>';
+        echo '<li class="kcf-thread-item'.$cls.'">'.$body.$checkbox.'</li>';
       }
       echo '</ul></div></div></form>'.$thread_bulk_script.$highlight_script;
     } else {
@@ -160,7 +161,8 @@ function kcf_admin_inbox_page(){ if(!current_user_can('manage_options')) return;
               $checkbox='<div class="kcf-thread-checkbox"></div>';
             }
           }
-          echo '<li class="kcf-thread-item'.$cls.'">'.$checkbox.'<div class="kcf-thread-body"><div><strong>'.esc_html($subj!==''?$subj:'(be temos)').'</strong></div><div><em>'.esc_html($item['created_at']).'</em> — '.esc_html($by).'</div><div style="word-break:break-word">'.wp_kses_post(nl2br(esc_html($body_clean))).'</div></div></li>';
+          $body='<div class="kcf-thread-body"><div><strong>'.esc_html($subj!==''?$subj:'(be temos)').'</strong></div><div><em>'.esc_html($item['created_at']).'</em> — '.esc_html($by).'</div><div style="word-break:break-word">'.wp_kses_post(nl2br(esc_html($body_clean))).'</div></div>';
+          echo '<li class="kcf-thread-item'.$cls.'">'.$body.$checkbox.'</li>';
         }
         echo '</ul>';
         if($has_inbound){
