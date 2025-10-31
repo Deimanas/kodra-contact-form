@@ -17,7 +17,7 @@
     function setMessage(type,text){ if(!$m.length) return; $m.removeClass('kcf-msg--success kcf-msg--error'); if(type){ $m.addClass('kcf-msg--'+type); } $m.text(text); }
     setMessage('', ''); $b.prop('disabled',true); console.group('KCF submit'); console.info('Submitting to', KCF&&KCF.ajaxurl); var payload=$f.serialize(); console.debug('Payload',payload);
     ensureRecaptchaToken($f).then(function(){ $.ajax({url:KCF.ajaxurl,type:'POST',data:payload,
-      success:function(r){ console.info('Response',r); if(r&&r.success){ setMessage('success', r.data&&r.data.message?r.data.message:'OK'); $f[0].reset(); } else if(r&&r.data&&r.data.message){ setMessage('error', r.data.message); } else { setMessage('error','Įvyko klaida.'); } },
+      success:function(r){ console.info('Response',r); if(r&&r.success){ setMessage('success', r.data&&r.data.message?r.data.message:'OK'); $f[0].reset(); refreshPhoneFields($f); $(document).trigger('kcf:refresh',$f); } else if(r&&r.data&&r.data.message){ setMessage('error', r.data.message); } else { setMessage('error','Įvyko klaida.'); } },
       error:function(xhr,status,err){ console.error('Request error',status,err,xhr&&xhr.responseText); setMessage('error','Įvyko klaida.'); },
       complete:function(){ console.groupEnd(); $b.prop('disabled',false); }
     }); });

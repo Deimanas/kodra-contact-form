@@ -17,12 +17,24 @@
 .kcf-msg{margin-top:14px;font-size:14px;min-height:18px}
 .kcf-msg--success{color:#0f5132;background:#d1e7dd;padding:10px 14px;border-radius:8px}
 .kcf-msg--error{color:#842029;background:#f8d7da;padding:10px 14px;border-radius:8px}
-.kcf-thread{list-style:none;padding-left:0;max-width:900px}
+.kcf-thread-layout{display:flex;align-items:stretch;gap:18px;max-width:960px;width:100%;flex-wrap:nowrap}
+.kcf-thread-controls{flex:0 0 220px;display:flex;justify-content:center;align-items:center}
+.kcf-thread-controls .kcf-thread-bulk-actions{margin:0;display:flex;flex-direction:column;align-items:flex-start;gap:14px;width:100%}
+.kcf-thread-controls .kcf-thread-bulk-actions label{margin:0}
+.kcf-thread-controls .kcf-thread-bulk-actions .button{width:100%;justify-content:center}
+.kcf-thread-list{flex:1 1 auto;min-width:0}
+.kcf-thread{list-style:none;padding-left:0;margin:0}
 .kcf-thread-item{display:flex;gap:12px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;background:#fff}
 .kcf-thread-item.kcf-latest strong{font-weight:500}
-.kcf-thread-checkbox{min-width:20px;padding-top:4px}
+.kcf-thread-checkbox{min-width:48px;display:flex;align-items:center;justify-content:center}
 .kcf-thread-checkbox input{margin:0}
 .kcf-thread-body{flex:1;min-width:0}
 .kcf-thread-bulk-actions{display:flex;align-items:center;gap:12px;margin:12px 0}
 .kcf-thread-bulk-actions label{display:flex;align-items:center;gap:6px;margin:0}
+@media (max-width:900px){
+  .kcf-thread-layout{flex-direction:column}
+  .kcf-thread-controls{flex:0 0 auto;justify-content:flex-start;align-items:flex-start}
+  .kcf-thread-controls .kcf-thread-bulk-actions{flex-direction:row;flex-wrap:wrap;gap:12px;margin:0}
+  .kcf-thread-controls .kcf-thread-bulk-actions .button{width:auto}
+}
 @media (max-width:768px){.kcf-grid{grid-template-columns:1fr;gap:18px}}
