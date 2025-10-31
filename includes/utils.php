@@ -2,6 +2,16 @@
 <?php if(!defined('ABSPATH')) exit;
 if(!function_exists('kcf_settings_get')){ function kcf_settings_get($k,$d=''){ $o=get_option(KCF_OPT,[]); return isset($o[$k])?$o[$k]:$d; } }
 function kcf_log($msg){ $log=get_option('kcf_log',[]); $log[]='['.current_time('mysql').'] '.$msg; if(count($log)>1000) $log=array_slice($log,-1000); update_option('kcf_log',$log,false); update_option('kcf_last_check', current_time('mysql'), false); }
+if(!function_exists('kcf_phone_prefixes')){
+  function kcf_phone_prefixes(){
+    $prefixes=[
+      ['value'=>'+3706','country'=>'Lietuva','flag'=>'lt','emoji'=>'🇱🇹','length'=>7],
+      ['value'=>'+3712','country'=>'Latvija','flag'=>'lv','emoji'=>'🇱🇻','length'=>7],
+      ['value'=>'+3725','country'=>'Estija','flag'=>'ee','emoji'=>'🇪🇪','length'=>7],
+    ];
+    return apply_filters('kcf_phone_prefixes',$prefixes);
+  }
+}
 function kcf_trim_body_for_admin($body){
   $b=str_replace(['<br />','<br/>','<br>'],"\n",$body);
   $b=str_replace(["\r\n","\r"],"\n",$b);
