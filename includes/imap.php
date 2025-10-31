@@ -139,10 +139,17 @@ add_action('kcf_check_mail_event',function(){
         }
       }
       $stored_body=kcf_imap_normalize_body($body);
+      $thread_root=0;
+      if($inbox_ref>0){
+        $thread_root=$inbox_ref;
+      } elseif($message_id>0){
+        $thread_root=$message_id;
+      }
       $wpdb->insert(
         KCF_REPLIES_TABLE,
         [
           'message_id'=>$message_id,
+          'thread_root'=>$thread_root,
           'created_at'=>current_time('mysql'),
           'wp_user_id'=>0,
           'direction'=>1,
@@ -152,8 +159,12 @@ add_action('kcf_check_mail_event',function(){
           'sent'=>1,
           'seen'=>0,
         ],
-        ['%d','%s','%d','%d','%s','%s','%s','%d','%d']
+        ['%d','%d','%s','%d','%d','%s','%s','%s','%d','%d']
       );
+      $reply_id=$wpdb->insert_id;
+      if(!$thread_root && $reply_id){
+        $wpdb->update(KCF_REPLIES_TABLE,['thread_root'=>$reply_id],['id'=>$reply_id],['%d'],['%d']);
+      }
       if($message_id>0){
         kcf_log('Stored inbound reply for message '.$message_id);
       } else {
