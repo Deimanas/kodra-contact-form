@@ -115,6 +115,25 @@ add_action('kcf_check_mail_event',function(){
         $fromaddr=$h->from[0]->mailbox.'@'.$h->from[0]->host;
       }
       $message_id=$id>0?$id:0;
+      $external_id='';
+      if(isset($h->message_id)){
+        $external_id=trim((string)$h->message_id);
+      }
+      if($external_id===''){
+        if(preg_match('/^Message-ID:\s*(.+)$/mi',$raw,$m)){
+          $external_id=trim($m[1]);
+        }
+      }
+      if($external_id!==''){
+        $external_id=trim($external_id," <>\"'\r\n");
+        $external_id=str_replace(["\r","\n"],'',$external_id);
+        $existing=$wpdb->get_var($wpdb->prepare('SELECT id FROM '.KCF_REPLIES_TABLE.' WHERE external_id=%s',$external_id));
+        if($existing){
+          kcf_log('Skipping duplicate email with Message-ID '.$external_id);
+          imap_setflag_full($inbox,(string)$no,"\\Seen");
+          continue;
+        }
+      }
       if($message_id===0 && $inbox_ref>0){
         $linked=$wpdb->get_var($wpdb->prepare('SELECT message_id FROM '.KCF_REPLIES_TABLE.' WHERE id=%d',$inbox_ref));
         if($linked){
@@ -128,25 +147,32 @@ add_action('kcf_check_mail_event',function(){
       } elseif($message_id>0){
         $thread_root=$message_id;
       }
-      $wpdb->insert(
-        KCF_REPLIES_TABLE,
-        [
-          'message_id'=>$message_id,
-          'thread_root'=>$thread_root,
-          'created_at'=>current_time('mysql'),
-          'wp_user_id'=>0,
-          'direction'=>1,
-          'to_email'=>$fromaddr,
-          'subject'=>$subject,
-          'body'=>$stored_body,
-          'sent'=>1,
-          'seen'=>0,
-        ],
-        ['%d','%d','%s','%d','%d','%s','%s','%s','%d','%d']
-      );
+      $data=[
+        'message_id'=>$message_id,
+        'thread_root'=>$thread_root,
+        'created_at'=>current_time('mysql'),
+        'wp_user_id'=>0,
+        'direction'=>1,
+        'to_email'=>$fromaddr,
+        'subject'=>$subject,
+        'body'=>$stored_body,
+        'sent'=>1,
+        'seen'=>0,
+      ];
+      $format=['%d','%d','%s','%d','%d','%s','%s','%s','%d','%d'];
+      if($external_id!==''){
+        $data['external_id']=$external_id;
+        $format[]='%s';
+      }
+      $wpdb->insert(KCF_REPLIES_TABLE,$data,$format);
       $reply_id=$wpdb->insert_id;
       if(!$thread_root && $reply_id){
         $wpdb->update(KCF_REPLIES_TABLE,['thread_root'=>$reply_id],['id'=>$reply_id],['%d'],['%d']);
+      } elseif($thread_root && $reply_id && $thread_root!==$reply_id){
+        $wpdb->query($wpdb->prepare('UPDATE '.KCF_REPLIES_TABLE.' SET seen=0 WHERE id=%d',$thread_root));
+      }
+      if($message_id>0){
+        $wpdb->query($wpdb->prepare('UPDATE '.KCF_TABLE.' SET seen=0 WHERE id=%d',$message_id));
       }
       if($message_id>0){
         kcf_log('Stored inbound reply for message '.$message_id);
