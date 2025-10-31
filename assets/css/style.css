@@ -17,6 +17,12 @@
 .kcf-msg{margin-top:14px;font-size:14px;min-height:18px}
 .kcf-msg--success{color:#0f5132;background:#d1e7dd;padding:10px 14px;border-radius:8px}
 .kcf-msg--error{color:#842029;background:#f8d7da;padding:10px 14px;border-radius:8px}
-.kcf-thread{list-style:none;padding-left:0;max-width:900px}.kcf-thread-item{padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;background:#fff}
+.kcf-thread{list-style:none;padding-left:0;max-width:900px}
+.kcf-thread-item{display:flex;gap:12px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;background:#fff}
 .kcf-thread-item.kcf-latest strong{font-weight:500}
+.kcf-thread-checkbox{min-width:20px;padding-top:4px}
+.kcf-thread-checkbox input{margin:0}
+.kcf-thread-body{flex:1;min-width:0}
+.kcf-thread-bulk-actions{display:flex;align-items:center;gap:12px;margin:12px 0}
+.kcf-thread-bulk-actions label{display:flex;align-items:center;gap:6px;margin:0}
 @media (max-width:768px){.kcf-grid{grid-template-columns:1fr;gap:18px}}
