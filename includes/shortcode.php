@@ -13,10 +13,10 @@ function kcf_contact_form_shortcode(){ wp_enqueue_style('kcf-style'); wp_enqueue
   <div class="kcf-field"><label>Telefono numeris *</label>
     <div class="kcf-phone">
       <div class="kcf-phone__prefix">
-        <span class="kcf-phone__flag<?php if($default_flag!==''): ?> kcf-phone__flag--<?php echo esc_attr($default_flag); ?><?php endif; ?>" aria-hidden="true"<?php if($default_country!==''): ?> title="<?php echo esc_attr($default_country); ?>"<?php endif; ?>><?php echo esc_html($default_emoji); ?></span>
+        <span class="kcf-phone__flag<?php if($default_flag!==''): ?> kcf-phone__flag--<?php echo esc_attr($default_flag); ?><?php endif; ?>" aria-hidden="true"<?php if($default_country!==''): ?> title="<?php echo esc_attr($default_country); ?>" aria-label="<?php echo esc_attr($default_country); ?>"<?php endif; ?>><?php echo esc_html($default_emoji); ?></span>
         <select name="telefonas_prefix" class="kcf-phone__prefix-select" required>
-          <?php foreach($prefixes as $prefix): $value=isset($prefix['value'])?(string)$prefix['value']:'+3706'; $country=isset($prefix['country'])?(string)$prefix['country']:''; $flag=isset($prefix['flag'])?(string)$prefix['flag']:''; $emoji=isset($prefix['emoji'])?(string)$prefix['emoji']:''; $length=isset($prefix['length'])?intval($prefix['length']):0; $label=trim($value.' '.$country); ?>
-            <option value="<?php echo esc_attr($value); ?>" data-flag="<?php echo esc_attr($flag); ?>" data-emoji="<?php echo esc_attr($emoji); ?>" data-country="<?php echo esc_attr($country); ?>" data-length="<?php echo esc_attr($length); ?>" <?php selected($value,$default_value); ?>><?php echo esc_html($label!==''?$label:$value); ?></option>
+          <?php foreach($prefixes as $prefix): $value=isset($prefix['value'])?(string)$prefix['value']:'+3706'; $country=isset($prefix['country'])?(string)$prefix['country']:''; $flag=isset($prefix['flag'])?(string)$prefix['flag']:''; $emoji=isset($prefix['emoji'])?(string)$prefix['emoji']:''; $length=isset($prefix['length'])?intval($prefix['length']):0; $label=trim($emoji.' '.$value); ?>
+            <option value="<?php echo esc_attr($value); ?>" data-flag="<?php echo esc_attr($flag); ?>" data-emoji="<?php echo esc_attr($emoji); ?>" data-country="<?php echo esc_attr($country); ?>" data-length="<?php echo esc_attr($length); ?>"<?php if($country!==''): ?> title="<?php echo esc_attr($country); ?>"<?php endif; ?> <?php selected($value,$default_value); ?>><?php echo esc_html($label!==''?$label:$value); ?></option>
           <?php endforeach; ?>
         </select>
       </div>

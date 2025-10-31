@@ -35,24 +35,6 @@ function kcf_imap_part_charset($part){
   return '';
 }
 
-function kcf_imap_convert_charset($text,$charset){
-  $charset=trim((string)$charset);
-  if($charset==='') return $text;
-  if(strtolower($charset)==='utf-8') return $text;
-  $charset=preg_replace('/[^A-Za-z0-9_\-]/','',$charset);
-  if($charset==='') return $text;
-  if(function_exists('iconv')){
-    $converted=@iconv($charset,'UTF-8//TRANSLIT',$text);
-    if($converted===false) $converted=@iconv($charset,'UTF-8//IGNORE',$text);
-    if($converted!==false) return $converted;
-  }
-  if(function_exists('mb_convert_encoding')){
-    $converted=@mb_convert_encoding($text,'UTF-8',$charset);
-    if($converted!==false) return $converted;
-  }
-  return $text;
-}
-
 function kcf_imap_decode_text_part($inbox,$no,$partNumber,$part){
   $section=$partNumber!==''?$partNumber:'1';
   $data=($section==='1'&&(!isset($part->bytes)||$part->bytes==0))?imap_body($inbox,$no):imap_fetchbody($inbox,$no,$section);
@@ -64,7 +46,7 @@ function kcf_imap_decode_text_part($inbox,$no,$partNumber,$part){
   }
   $charset=kcf_imap_part_charset($part);
   if($charset!==''){
-    $data=kcf_imap_convert_charset($data,$charset);
+    $data=kcf_convert_charset_to_utf8($data,$charset);
   }
   return $data;
 }
@@ -115,7 +97,8 @@ add_action('kcf_check_mail_event',function(){
     foreach($emails as $no){
       $raw=imap_fetchheader($inbox,$no);
       $h=imap_headerinfo($inbox,$no);
-      $subject=isset($h->subject)?imap_utf8($h->subject):'';
+      $subject_raw=isset($h->subject)?$h->subject:'';
+      $subject=sanitize_text_field(kcf_decode_mime_header($subject_raw));
       $body=kcf_imap_collect_text($inbox,$no);
       if(!is_string($body)) $body='';
       $id=kcf_extract_kcf_id($subject,$raw,$body);
