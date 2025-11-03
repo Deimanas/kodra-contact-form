@@ -28,12 +28,14 @@
 .kcf-thread-item.kcf-latest strong{font-weight:500}
 .kcf-thread-body{display:flex;flex-direction:column;gap:6px;min-width:0}
 .kcf-thread-header{display:flex;align-items:center;gap:12px;min-width:0}
-.kcf-thread-header strong{flex:1 1 auto;min-width:0;word-break:break-word}
-.kcf-thread-checkbox{min-width:48px;display:flex;align-items:center;justify-content:center}
+.kcf-thread-title{min-width:0;flex:1 1 auto}
+.kcf-thread-title strong{display:block;min-width:0;word-break:break-word;overflow-wrap:anywhere}
+.kcf-thread-body{overflow-wrap:anywhere}
+.kcf-thread-checkbox{flex:0 0 auto;min-width:48px;display:flex;align-items:center;justify-content:center}
 .kcf-thread-checkbox[aria-hidden="true"]{visibility:hidden}
 .kcf-thread-checkbox input{margin:0}
 .kcf-thread-meta{font-size:13px;color:#4a5568}
-.kcf-thread-content{word-break:break-word}
+.kcf-thread-content{word-break:break-word;overflow-wrap:anywhere}
 .kcf-thread-bulk-actions{display:flex;align-items:center;gap:12px;margin:12px 0}
 .kcf-thread-bulk-actions label{display:flex;align-items:center;gap:6px;margin:0}
 @media (max-width:900px){
