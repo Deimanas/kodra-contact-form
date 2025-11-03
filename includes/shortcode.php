@@ -100,7 +100,20 @@ function kcf_contact_form_shortcode(){
                       $emoji=kcf_flag_to_emoji($flag);
                     }
                     $length=isset($prefix['length'])?intval($prefix['length']):0;
-                    $option_label=trim($emoji.' '.$value);
+                    $label_parts=[];
+                    if($emoji!==''){
+                      $label_parts[]=$emoji;
+                    }
+                    if($country!==''){
+                      $label_parts[]=$country;
+                    }
+                    if($value!==''){
+                      $label_parts[]=$value;
+                    }
+                    $option_label=trim(implode(' ',$label_parts));
+                    if($option_label===''){
+                      $option_label=$value!==''?$value:$country;
+                    }
                     ?>
                     <option value="<?php echo esc_attr($value); ?>" data-flag="<?php echo esc_attr($flag); ?>" data-emoji="<?php echo esc_attr($emoji); ?>" data-country="<?php echo esc_attr($country); ?>" data-length="<?php echo esc_attr($length); ?>"<?php if($country!==''): ?> title="<?php echo esc_attr($country); ?>"<?php endif; ?> <?php selected($value,$default_value); ?>><?php echo esc_html($option_label!==''?$option_label:$value); ?></option>
                   <?php endforeach; ?>
