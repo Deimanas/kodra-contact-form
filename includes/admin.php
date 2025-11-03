@@ -80,9 +80,9 @@ function kcf_admin_messages_page(){ if(!current_user_can('manage_options')) retu
         $clean=function_exists('kcf_trim_body_for_admin')?kcf_trim_body_for_admin($rep['body']):$rep['body'];
         $subject_display=kcf_decode_mime_header($rep['subject']);
         $header='<div class="kcf-thread-header">';
-        $header.='<div class="kcf-thread-title"><strong>'.esc_html($subject_display).'</strong></div>';
+        $header.='<div class="kcf-thread-title"><strong>'.esc_html($subject_display).'</strong>';
         $header.='<label class="kcf-thread-checkbox"><span class="screen-reader-text">Pažymėti įrašą #'.intval($rep['id']).'</span><input type="checkbox" class="kcf-thread-row" name="ids[]" value="'.intval($rep['id']).'"></label>';
-        $header.='</div>';
+        $header.='</div></div>';
         $meta='<div class="kcf-thread-meta"><em>'.esc_html($rep['created_at']).'</em> — '.esc_html($by).'</div>';
         $content='<div class="kcf-thread-content">'.wp_kses_post(nl2br(esc_html($clean))).'</div>';
         $body='<div class="kcf-thread-body">'.$header.$meta.$content.'</div>';
@@ -162,13 +162,13 @@ function kcf_admin_inbox_page(){ if(!current_user_can('manage_options')) return;
           $header_subject=esc_html($subj!==''?$subj:'(be temos)');
           if($has_inbound){
             $header='<div class="kcf-thread-header">';
-            $header.='<div class="kcf-thread-title"><strong>'.$header_subject.'</strong></div>';
+            $header.='<div class="kcf-thread-title"><strong>'.$header_subject.'</strong>';
             if(intval($item['direction'])===1){
               $header.='<label class="kcf-thread-checkbox"><span class="screen-reader-text">Pažymėti laišką #'.intval($item['id']).'</span><input type="checkbox" class="kcf-thread-row" name="ids[]" value="'.intval($item['id']).'"></label>';
             } else {
               $header.='<span class="kcf-thread-checkbox" aria-hidden="true"></span>';
             }
-            $header.='</div>';
+            $header.='</div></div>';
           } else {
             $header='<div class="kcf-thread-header"><div class="kcf-thread-title"><strong>'.$header_subject.'</strong></div></div>';
           }

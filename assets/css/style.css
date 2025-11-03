@@ -28,8 +28,9 @@
 .kcf-thread-item.kcf-latest strong{font-weight:500}
 .kcf-thread-body{display:flex;flex-direction:column;gap:6px;min-width:0}
 .kcf-thread-header{display:flex;align-items:center;gap:12px;min-width:0}
-.kcf-thread-title{min-width:0;flex:1 1 auto}
-.kcf-thread-title strong{display:block;min-width:0;word-break:break-word;overflow-wrap:anywhere}
+.kcf-thread-title{min-width:0;flex:1 1 auto;display:flex;align-items:center;gap:12px}
+.kcf-thread-title strong{display:block;min-width:0;word-break:break-word;overflow-wrap:anywhere;flex:1 1 auto}
+.kcf-thread-title .kcf-thread-checkbox{margin-left:auto}
 .kcf-thread-body{overflow-wrap:anywhere}
 .kcf-thread-checkbox{flex:0 0 auto;min-width:48px;display:flex;align-items:center;justify-content:center}
 .kcf-thread-checkbox[aria-hidden="true"]{visibility:hidden}
