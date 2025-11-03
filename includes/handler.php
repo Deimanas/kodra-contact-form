@@ -2,11 +2,65 @@
 <?php if(!defined('ABSPATH')) exit;
 function kcf_sanitize_text($v){ return trim( wp_kses($v,[]) ); }
 function kcf_store_message($d){ global $wpdb; $wpdb->insert(KCF_TABLE,[ 'created_at'=>current_time('mysql'),'name'=>$d['vardas'],'company'=>$d['imone'],'phone'=>$d['telefonas'],'email'=>$d['email'],'message'=>$d['zinute'],'extra'=>$d['extra'],'ip'=>$_SERVER['REMOTE_ADDR']??'','user_agent'=>$_SERVER['HTTP_USER_AGENT']??'','seen'=>0 ],['%s','%s','%s','%s','%s','%s','%s','%s','%s','%d']); return $wpdb->insert_id; }
-function kcf_verify_recaptcha(){ $enabled=(int)kcf_settings_get('recaptcha_enabled',0)===1; if(!$enabled) return true; $secret=kcf_settings_get('recaptcha_secret_key',''); if(empty($secret)) return true; $resp=isset($_POST['g-recaptcha-response'])?sanitize_text_field($_POST['g-recaptcha-response']):''; if(empty($resp)) return false; $r=wp_remote_post('https://www.google.com/recaptcha/api/siteverify',['timeout'=>10,'body'=>['secret'=>$secret,'response'=>$resp,'remoteip'=>$_SERVER['REMOTE_ADDR']??'']]); if(is_wp_error($r)) return false; $d=json_decode(wp_remote_retrieve_body($r),true); if(empty($d['success'])) return false; $thr=floatval(kcf_settings_get('recaptcha_threshold',0.5)); if(isset($d['score']) && floatval($d['score'])<$thr) return false; return true; }
+function kcf_verify_recaptcha(){
+  $config=kcf_get_recaptcha_config();
+  $mode=$config['mode'];
+  if($mode==='none') return true;
+  $secret=$config['secret_key'];
+  if($secret===''){
+    return new WP_Error('kcf_recaptcha_config','reCAPTCHA konfigūracija neužpildyta.');
+  }
+  $response=isset($_POST['g-recaptcha-response'])?sanitize_text_field($_POST['g-recaptcha-response']):'';
+  if($response===''){
+    return new WP_Error('kcf_recaptcha_empty','Patvirtinkite, kad nesate robotas.');
+  }
+  $body=['secret'=>$secret,'response'=>$response];
+  if(!empty($_SERVER['REMOTE_ADDR'])){
+    $body['remoteip']=$_SERVER['REMOTE_ADDR'];
+  }
+  $request=wp_remote_post('https://www.google.com/recaptcha/api/siteverify',['timeout'=>10,'body'=>$body]);
+  if(is_wp_error($request)){
+    return new WP_Error('kcf_recaptcha_http','Nepavyko patvirtinti reCAPTCHA. Bandykite dar kartą.');
+  }
+  $data=json_decode(wp_remote_retrieve_body($request),true);
+  if(!is_array($data)){
+    return new WP_Error('kcf_recaptcha_http','Neteisingas reCAPTCHA atsakas.');
+  }
+  if(empty($data['success'])){
+    $message='reCAPTCHA nepavyko.';
+    if(!empty($data['error-codes']) && is_array($data['error-codes'])){
+      if(in_array('invalid-input-response',$data['error-codes'],true)){
+        $message='Patvirtinkite, kad nesate robotas.';
+      }
+    }
+    return new WP_Error('kcf_recaptcha_failed',$message);
+  }
+  if($mode==='v3'){
+    $action=isset($data['action'])?(string)$data['action']:'';
+    $expected_action=isset($config['action'])?$config['action']:'kcf_submit';
+    if($action!=='' && $action!==$expected_action){
+      return new WP_Error('kcf_recaptcha_action','Neteisingas reCAPTCHA veiksmas.');
+    }
+    if(isset($data['score'])){
+      $score=floatval($data['score']);
+      if($score<$config['threshold']){
+        return new WP_Error('kcf_recaptcha_score','reCAPTCHA patikrinimas nesurinko pakankamo balo.');
+      }
+    }
+  }
+  return true;
+}
 function kcf_handle_submit(){
   if(empty($_POST['kcf_nonce'])||!wp_verify_nonce($_POST['kcf_nonce'],'kcf_nonce')) wp_send_json_error(['message'=>'Neteisinga užklausa.'],400);
   if(!empty($_POST['website'])) wp_send_json_success(['message'=>'Ačiū! Jeigu esate žmogus, Jūsų žinutė gauta.']);
-  if(!kcf_verify_recaptcha()) wp_send_json_error(['message'=>'reCAPTCHA nepraėjo.'],403);
+  $recaptcha_check=kcf_verify_recaptcha();
+  if($recaptcha_check!==true){
+    $message='reCAPTCHA nepavyko.';
+    if(is_wp_error($recaptcha_check) && $recaptcha_check->get_error_message()){
+      $message=$recaptcha_check->get_error_message();
+    }
+    wp_send_json_error(['message'=>$message],403);
+  }
   $layout=kcf_get_form_layout();
   $fields=array_merge($layout['fields'],$layout['custom_fields']);
   if(empty($fields)){

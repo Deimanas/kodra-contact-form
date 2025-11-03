@@ -2,12 +2,12 @@
 <?php
 /**
   * Plugin Name: Kodra Contact Form
- * Version: 1.7.3.2
+ * Version: 1.7.3.3
  * GitHub Plugin URI: https://github.com/Deimanas/kodra-contact-form
  * Primary Branch: main
  */
 if(!defined('ABSPATH')) exit;
-define('KCF_VERSION','1.7.3.2'); define('KCF_PATH', plugin_dir_path(__FILE__)); define('KCF_URL', plugin_dir_url(__FILE__));
+define('KCF_VERSION','1.7.3.3'); define('KCF_PATH', plugin_dir_path(__FILE__)); define('KCF_URL', plugin_dir_url(__FILE__));
 define('KCF_SCHEMA_VERSION','2025110201');
 add_filter('upgrader_source_selection',function($source,$remote_source,$upgrader,$hook_extra){
   if(empty($hook_extra['plugin'])||$hook_extra['plugin']!==plugin_basename(__FILE__)) return $source;
@@ -53,7 +53,21 @@ function kcf_maybe_upgrade_schema(){
 }
 add_action('plugins_loaded','kcf_maybe_upgrade_schema',5);
 
-add_action('wp_enqueue_scripts',function(){ wp_register_style('kcf-style',KCF_URL.'assets/css/style.css',[],KCF_VERSION); wp_register_script('kcf-script',KCF_URL.'assets/js/form.js',['jquery'],KCF_VERSION,true); $o=get_option(KCF_OPT,[]); wp_localize_script('kcf-script','KCF',['ajaxurl'=>admin_url('admin-ajax.php'),'nonce'=>wp_create_nonce('kcf_nonce'),'recaptcha_site_key'=>!empty($o['recaptcha_enabled'])?($o['recaptcha_site_key']??''):'' ]); });
+add_action('wp_enqueue_scripts',function(){
+  wp_register_style('kcf-style',KCF_URL.'assets/css/style.css',[],KCF_VERSION);
+  wp_register_script('kcf-script',KCF_URL.'assets/js/form.js',['jquery'],KCF_VERSION,true);
+  $config=function_exists('kcf_get_recaptcha_config')?kcf_get_recaptcha_config():['mode'=>'none','site_key'=>''];
+  $site_key=isset($config['site_key'])?$config['site_key']:'';
+  $mode=isset($config['mode'])?$config['mode']:'none';
+  $localized=[
+    'ajaxurl'=>admin_url('admin-ajax.php'),
+    'nonce'=>wp_create_nonce('kcf_nonce'),
+    'recaptcha_mode'=>$mode,
+    'recaptcha_site_key'=>$mode!=='none'?$site_key:'',
+    'recaptcha_action'=>'kcf_submit',
+  ];
+  wp_localize_script('kcf-script','KCF',$localized);
+});
 
 add_action('init',function(){ if(!session_id()) @session_start(); if(empty($_SESSION['kcf_last_check'])||(time()-intval($_SESSION['kcf_last_check']))>300){ $_SESSION['kcf_last_check']=time(); do_action('kcf_check_mail_event'); }},2);
 add_filter('cron_schedules',function($s){$s['kcf_every_5_minutes']=['interval'=>300,'display'=>'Kas 5 minutes'];return $s;});

@@ -13,6 +13,35 @@ if(!function_exists('kcf_phone_prefixes')){
   }
 }
 
+if(!function_exists('kcf_get_recaptcha_config')){
+  function kcf_get_recaptcha_config(){
+    $mode=kcf_settings_get('recaptcha_mode','');
+    $enabled=intval(kcf_settings_get('recaptcha_enabled',0));
+    if($mode===''){
+      $mode=$enabled? 'v3':'none';
+    }
+    $mode=in_array($mode,['v2','v3'],true)?$mode:'none';
+    if($enabled===0){
+      $mode='none';
+    }
+    $site=trim((string)kcf_settings_get('recaptcha_site_key',''));
+    $secret=trim((string)kcf_settings_get('recaptcha_secret_key',''));
+    $threshold=floatval(kcf_settings_get('recaptcha_threshold',0.5));
+    if($threshold<0) $threshold=0;
+    if($threshold>1) $threshold=1;
+    if($mode!=='none' && $site===''){
+      $mode='none';
+    }
+    return [
+      'mode'=>$mode,
+      'site_key'=>$site,
+      'secret_key'=>$secret,
+      'threshold'=>$threshold,
+      'action'=>'kcf_submit',
+    ];
+  }
+}
+
 if(!function_exists('kcf_sanitize_class_list')){
   function kcf_sanitize_class_list($value){
     if(is_array($value)) $value=implode(' ',$value);

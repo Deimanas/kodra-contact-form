@@ -2,8 +2,10 @@
 function kcf_contact_form_shortcode(){
   wp_enqueue_style('kcf-style');
   wp_enqueue_script('kcf-script');
-  $site=kcf_settings_get('recaptcha_site_key','');
-  $rec=((int)kcf_settings_get('recaptcha_enabled',0)===1)&&!empty($site);
+  $recaptcha=kcf_get_recaptcha_config();
+  $rec_mode=$recaptcha['mode'];
+  $site=$recaptcha['site_key'];
+  $rec_active=$rec_mode!=='none' && $site!=='';
   $layout=kcf_get_form_layout();
   $fields=array_merge($layout['fields'],$layout['custom_fields']);
   if(empty($fields)){
@@ -42,14 +44,16 @@ function kcf_contact_form_shortcode(){
   $button_style=$button['style']!==''?' style="'.esc_attr($button['style']).'"':'';
   $autocomplete_map=['vardas'=>'name','email'=>'email','imone'=>'organization'];
   ob_start();
-  if($rec){
-    echo '<script src="https://www.google.com/recaptcha/api.js?render='.esc_attr($site).'"></script>';
+  if($rec_mode==='v3' && $rec_active){
+    echo '<script src="https://www.google.com/recaptcha/api.js?render='.esc_attr($site).'" async defer></script>';
+  } elseif($rec_mode==='v2' && $rec_active){
+    echo '<script src="https://www.google.com/recaptcha/api.js?hl=lt" async defer></script>';
   }
   ?>
   <form class="kcf-form" method="post" novalidate>
     <input type="hidden" name="action" value="kcf_submit" />
     <input type="hidden" name="kcf_nonce" value="<?php echo esc_attr( wp_create_nonce('kcf_nonce') ); ?>" />
-    <?php if($rec): ?><input type="hidden" name="g-recaptcha-response" class="kcf-grecaptcha" value=""><?php endif; ?>
+    <?php if($rec_mode==='v3' && $rec_active): ?><input type="hidden" name="g-recaptcha-response" class="kcf-grecaptcha" value=""><?php endif; ?>
     <div class="kcf-grid">
       <?php foreach($fields as $field):
         $key=isset($field['key'])?$field['key']:'';
@@ -125,6 +129,11 @@ function kcf_contact_form_shortcode(){
         </div>
       <?php endforeach; ?>
     </div>
+    <?php if($rec_mode==='v2' && $rec_active): ?>
+      <div class="kcf-recaptcha kcf-recaptcha--v2">
+        <div class="g-recaptcha" data-sitekey="<?php echo esc_attr($site); ?>"></div>
+      </div>
+    <?php endif; ?>
     <div class="<?php echo esc_attr($actions_class); ?>">
       <button type="submit" class="<?php echo esc_attr($button_class); ?>"<?php echo $button_style; ?>><?php echo esc_html($button_text); ?></button>
     </div>
