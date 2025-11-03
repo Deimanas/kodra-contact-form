@@ -35,24 +35,6 @@ function kcf_imap_part_charset($part){
   return '';
 }
 
-function kcf_imap_convert_charset($text,$charset){
-  $charset=trim((string)$charset);
-  if($charset==='') return $text;
-  if(strtolower($charset)==='utf-8') return $text;
-  $charset=preg_replace('/[^A-Za-z0-9_\-]/','',$charset);
-  if($charset==='') return $text;
-  if(function_exists('iconv')){
-    $converted=@iconv($charset,'UTF-8//TRANSLIT',$text);
-    if($converted===false) $converted=@iconv($charset,'UTF-8//IGNORE',$text);
-    if($converted!==false) return $converted;
-  }
-  if(function_exists('mb_convert_encoding')){
-    $converted=@mb_convert_encoding($text,'UTF-8',$charset);
-    if($converted!==false) return $converted;
-  }
-  return $text;
-}
-
 function kcf_imap_decode_text_part($inbox,$no,$partNumber,$part){
   $section=$partNumber!==''?$partNumber:'1';
   $data=($section==='1'&&(!isset($part->bytes)||$part->bytes==0))?imap_body($inbox,$no):imap_fetchbody($inbox,$no,$section);
@@ -64,7 +46,7 @@ function kcf_imap_decode_text_part($inbox,$no,$partNumber,$part){
   }
   $charset=kcf_imap_part_charset($part);
   if($charset!==''){
-    $data=kcf_imap_convert_charset($data,$charset);
+    $data=kcf_convert_charset_to_utf8($data,$charset);
   }
   return $data;
 }
@@ -115,7 +97,8 @@ add_action('kcf_check_mail_event',function(){
     foreach($emails as $no){
       $raw=imap_fetchheader($inbox,$no);
       $h=imap_headerinfo($inbox,$no);
-      $subject=isset($h->subject)?imap_utf8($h->subject):'';
+      $subject_raw=isset($h->subject)?$h->subject:'';
+      $subject=sanitize_text_field(kcf_decode_mime_header($subject_raw));
       $body=kcf_imap_collect_text($inbox,$no);
       if(!is_string($body)) $body='';
       $id=kcf_extract_kcf_id($subject,$raw,$body);
@@ -132,6 +115,25 @@ add_action('kcf_check_mail_event',function(){
         $fromaddr=$h->from[0]->mailbox.'@'.$h->from[0]->host;
       }
       $message_id=$id>0?$id:0;
+      $external_id='';
+      if(isset($h->message_id)){
+        $external_id=trim((string)$h->message_id);
+      }
+      if($external_id===''){
+        if(preg_match('/^Message-ID:\s*(.+)$/mi',$raw,$m)){
+          $external_id=trim($m[1]);
+        }
+      }
+      if($external_id!==''){
+        $external_id=trim($external_id," <>\"'\r\n");
+        $external_id=str_replace(["\r","\n"],'',$external_id);
+        $existing=$wpdb->get_var($wpdb->prepare('SELECT id FROM '.KCF_REPLIES_TABLE.' WHERE external_id=%s',$external_id));
+        if($existing){
+          kcf_log('Skipping duplicate email with Message-ID '.$external_id);
+          imap_setflag_full($inbox,(string)$no,"\\Seen");
+          continue;
+        }
+      }
       if($message_id===0 && $inbox_ref>0){
         $linked=$wpdb->get_var($wpdb->prepare('SELECT message_id FROM '.KCF_REPLIES_TABLE.' WHERE id=%d',$inbox_ref));
         if($linked){
@@ -139,21 +141,39 @@ add_action('kcf_check_mail_event',function(){
         }
       }
       $stored_body=kcf_imap_normalize_body($body);
-      $wpdb->insert(
-        KCF_REPLIES_TABLE,
-        [
-          'message_id'=>$message_id,
-          'created_at'=>current_time('mysql'),
-          'wp_user_id'=>0,
-          'direction'=>1,
-          'to_email'=>$fromaddr,
-          'subject'=>$subject,
-          'body'=>$stored_body,
-          'sent'=>1,
-          'seen'=>0,
-        ],
-        ['%d','%s','%d','%d','%s','%s','%s','%d','%d']
-      );
+      $thread_root=0;
+      if($inbox_ref>0){
+        $thread_root=$inbox_ref;
+      } elseif($message_id>0){
+        $thread_root=$message_id;
+      }
+      $data=[
+        'message_id'=>$message_id,
+        'thread_root'=>$thread_root,
+        'created_at'=>current_time('mysql'),
+        'wp_user_id'=>0,
+        'direction'=>1,
+        'to_email'=>$fromaddr,
+        'subject'=>$subject,
+        'body'=>$stored_body,
+        'sent'=>1,
+        'seen'=>0,
+      ];
+      $format=['%d','%d','%s','%d','%d','%s','%s','%s','%d','%d'];
+      if($external_id!==''){
+        $data['external_id']=$external_id;
+        $format[]='%s';
+      }
+      $wpdb->insert(KCF_REPLIES_TABLE,$data,$format);
+      $reply_id=$wpdb->insert_id;
+      if(!$thread_root && $reply_id){
+        $wpdb->update(KCF_REPLIES_TABLE,['thread_root'=>$reply_id],['id'=>$reply_id],['%d'],['%d']);
+      } elseif($thread_root && $reply_id && $thread_root!==$reply_id){
+        $wpdb->query($wpdb->prepare('UPDATE '.KCF_REPLIES_TABLE.' SET seen=0 WHERE id=%d',$thread_root));
+      }
+      if($message_id>0){
+        $wpdb->query($wpdb->prepare('UPDATE '.KCF_TABLE.' SET seen=0 WHERE id=%d',$message_id));
+      }
       if($message_id>0){
         kcf_log('Stored inbound reply for message '.$message_id);
       } else {
