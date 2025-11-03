@@ -32,7 +32,7 @@
 .kcf-thread{list-style:none;padding-left:0;margin:0}
 .kcf-thread-item{display:block;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:10px;background:#fff}
 .kcf-thread-item.kcf-latest strong{font-weight:500}
-.kcf-thread-body{display:flex;flex-direction:column;gap:6px;min-width:0;overflow-wrap:anywhere;padding:5px}
+.kcf-thread-body{display:flex;flex-direction:column;gap:6px;min-width:0;overflow-wrap:anywhere;padding: 5px;}
 .kcf-thread-header{display:flex;align-items:center;gap:12px;min-width:0}
 .kcf-thread-title{min-width:0;flex:1 1 auto;display:flex;align-items:center;gap:12px}
 .kcf-thread-title strong{display:block;min-width:0;word-break:break-word;overflow-wrap:anywhere;flex:1 1 auto}
@@ -45,8 +45,6 @@
 .kcf-thread-content{word-break:break-word;overflow-wrap:anywhere}
 .kcf-thread-bulk-actions{display:flex;align-items:center;gap:12px;margin:12px 0}
 .kcf-thread-bulk-actions label{display:flex;align-items:center;gap:6px;margin:0}
-.kcf-recaptcha{margin-top:16px;display:flex;justify-content:center}
-.kcf-recaptcha--v2{padding:8px 0}
 @media (max-width:900px){
   .kcf-thread-layout{flex-direction:column}
   .kcf-thread-controls{flex:0 0 auto;justify-content:flex-start;align-items:flex-start}

@@ -32,7 +32,13 @@ function kcf_contact_form_shortcode(){
   }
   $default_value=isset($default['value'])?(string)$default['value']:'+3706';
   $default_flag=isset($default['flag'])?(string)$default['flag']:'';
-  $default_emoji=isset($default['emoji'])?(string)$default['emoji']:'🇱🇹';
+  $default_emoji=isset($default['emoji'])?(string)$default['emoji']:'';
+  if($default_emoji===''){
+    $default_emoji=kcf_flag_to_emoji($default_flag);
+  }
+  if($default_emoji===''){
+    $default_emoji='🇱🇹';
+  }
   $default_country=isset($default['country'])?(string)$default['country']:'';
   $default_length=isset($default['length'])?max(intval($default['length']),0):0;
   $default_pattern=$default_length>0?'\d{'.$default_length.'}':'';
@@ -46,8 +52,6 @@ function kcf_contact_form_shortcode(){
   ob_start();
   if($rec_mode==='v3' && $rec_active){
     echo '<script src="https://www.google.com/recaptcha/api.js?render='.esc_attr($site).'" async defer></script>';
-  } elseif($rec_mode==='v2' && $rec_active){
-    echo '<script src="https://www.google.com/recaptcha/api.js?hl=lt" async defer></script>';
   }
   ?>
   <form class="kcf-form" method="post" novalidate>
@@ -92,6 +96,9 @@ function kcf_contact_form_shortcode(){
                     $country=isset($prefix['country'])?(string)$prefix['country']:'';
                     $flag=isset($prefix['flag'])?(string)$prefix['flag']:'';
                     $emoji=isset($prefix['emoji'])?(string)$prefix['emoji']:'';
+                    if($emoji===''){
+                      $emoji=kcf_flag_to_emoji($flag);
+                    }
                     $length=isset($prefix['length'])?intval($prefix['length']):0;
                     $option_label=trim($emoji.' '.$value);
                     ?>
@@ -129,11 +136,6 @@ function kcf_contact_form_shortcode(){
         </div>
       <?php endforeach; ?>
     </div>
-    <?php if($rec_mode==='v2' && $rec_active): ?>
-      <div class="kcf-recaptcha kcf-recaptcha--v2">
-        <div class="g-recaptcha" data-sitekey="<?php echo esc_attr($site); ?>"></div>
-      </div>
-    <?php endif; ?>
     <div class="<?php echo esc_attr($actions_class); ?>">
       <button type="submit" class="<?php echo esc_attr($button_class); ?>"<?php echo $button_style; ?>><?php echo esc_html($button_text); ?></button>
     </div>

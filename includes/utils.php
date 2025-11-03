@@ -9,7 +9,42 @@ if(!function_exists('kcf_phone_prefixes')){
       ['value'=>'+3712','country'=>'Latvija','flag'=>'lv','emoji'=>'🇱🇻','length'=>7],
       ['value'=>'+3725','country'=>'Estija','flag'=>'ee','emoji'=>'🇪🇪','length'=>7],
     ];
-    return apply_filters('kcf_phone_prefixes',$prefixes);
+    $prefixes=apply_filters('kcf_phone_prefixes',$prefixes);
+    if(!is_array($prefixes)) return [];
+    $normalized=[];
+    foreach($prefixes as $prefix){
+      if(!is_array($prefix)) continue;
+      $value=isset($prefix['value'])?(string)$prefix['value']:'';
+      if($value==='') continue;
+      $flag=isset($prefix['flag'])?(string)$prefix['flag']:'';
+      $emoji=isset($prefix['emoji'])?(string)$prefix['emoji']:'';
+      if($emoji===''){
+        $emoji=kcf_flag_to_emoji($flag);
+      }
+      $prefix['value']=$value;
+      $prefix['flag']=$flag;
+      $prefix['emoji']=$emoji;
+      $normalized[]=$prefix;
+    }
+    return $normalized;
+  }
+}
+
+if(!function_exists('kcf_flag_to_emoji')){
+  function kcf_flag_to_emoji($code){
+    $code=strtoupper(trim((string)$code));
+    if($code==='') return '';
+    if(strlen($code)!==2) return '';
+    $letters=str_split($code);
+    $emoji='';
+    foreach($letters as $letter){
+      $ord=ord($letter);
+      if($ord<65||$ord>90){
+        return '';
+      }
+      $emoji.=html_entity_decode('&#'.(127397+$ord).';',ENT_NOQUOTES,'UTF-8');
+    }
+    return $emoji;
   }
 }
 
@@ -20,7 +55,7 @@ if(!function_exists('kcf_get_recaptcha_config')){
     if($mode===''){
       $mode=$enabled? 'v3':'none';
     }
-    $mode=in_array($mode,['v2','v3'],true)?$mode:'none';
+    $mode=$mode==='v3'?'v3':'none';
     if($enabled===0){
       $mode='none';
     }

@@ -94,16 +94,6 @@
     console.info('Submitting to', KCF&&KCF.ajaxurl);
     var payload=$f.serialize();
     console.debug('Payload',payload);
-    if(getRecaptchaMode()==='v2'){
-      var $respField=$f.find('textarea[name="g-recaptcha-response"]');
-      if(!$respField.length || !$respField.val()){
-        console.warn('reCAPTCHA v2 response is empty');
-        setMessage('error','Patvirtinkite, kad nesate robotas.');
-        $b.prop('disabled',false);
-        console.groupEnd();
-        return;
-      }
-    }
     ensureRecaptchaToken($f).then(function(){
       $.ajax({
         url:KCF.ajaxurl,
@@ -121,16 +111,8 @@
           } else {
             setMessage('error','Įvyko klaida.');
           }
-          if(window.grecaptcha){
-            if(getRecaptchaMode()==='v3'){
-              $f.find('input[name="g-recaptcha-response"]').val('');
-            } else if(getRecaptchaMode()==='v2'){
-              try{
-                grecaptcha.reset();
-              }catch(err){
-                console.warn('Failed to reset reCAPTCHA',err);
-              }
-            }
+          if(window.grecaptcha && getRecaptchaMode()==='v3'){
+            $f.find('input[name="g-recaptcha-response"]').val('');
           }
         },
         error:function(xhr,status,err){
